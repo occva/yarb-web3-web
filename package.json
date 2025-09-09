@@ -1,0 +1,47 @@
+{
+  "name": "yarb-web3",
+  "version": "1.0.0",
+  "description": "基于 GitHub 目录结构的动态文章展示网站",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "axios": "^1.6.0",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "^4.1.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0"
+  },
+  "keywords": [
+    "react",
+    "typescript",
+    "vite",
+    "github-api",
+    "markdown",
+    "blog",
+    "yarb-web3"
+  ],
+  "author": "dubuqingfeng",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dubuqingfeng/yarb-web3.git"
+  },
+  "homepage": "https://github.com/dubuqingfeng/yarb-web3#readme",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}

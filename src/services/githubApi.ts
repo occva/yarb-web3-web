@@ -1,0 +1,223 @@
+import axios from 'axios';
+
+// GitHub API 基础配置
+const GITHUB_API_BASE = 'https://api.github.com';
+const REPO_OWNER = 'dubuqingfeng';
+const REPO_NAME = 'yarb-web3';
+const ARCHIVE_PATH = 'archive';
+
+// GitHub API 接口类型定义
+export interface GitHubFile {
+  name: string;
+  path: string;
+  sha: string;
+  size: number;
+  url: string;
+  html_url: string;
+  git_url: string;
+  download_url: string | null;
+  type: 'file' | 'dir';
+  content?: string;
+  encoding?: string;
+}
+
+export interface Article {
+  name: string;
+  path: string;
+  downloadUrl: string;
+  size: number;
+  date?: Date;
+}
+
+export interface YearFolder {
+  name: string;
+  path: string;
+  articles: Article[];
+}
+
+class GitHubApiService {
+  private cache = new Map<string, any>();
+  private cacheTimestamps = new Map<string, number>();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+  // 从文件名解析日期
+  private parseDateFromFilename(filename: string): Date | null {
+    // 尝试匹配各种日期格式
+    const patterns = [
+      /(\d{4})\.(\d{1,2})\.(\d{1,2})/,  // 2025.9.9, 2025.09.09
+      /(\d{4})-(\d{1,2})-(\d{1,2})/,   // 2025-9-9, 2025-09-09
+      /(\d{4})(\d{2})(\d{2})/,         // 20250909
+      /(\d{1,2})\.(\d{1,2})\.(\d{4})/, // 9.9.2025
+      /(\d{1,2})-(\d{1,2})-(\d{4})/,   // 9-9-2025
+    ];
+
+    for (const pattern of patterns) {
+      const match = filename.match(pattern);
+      if (match) {
+        let year, month, day;
+        
+        if (pattern === patterns[0] || pattern === patterns[1]) {
+          // 2025.9.9 或 2025-9-9 格式
+          [, year, month, day] = match;
+        } else if (pattern === patterns[2]) {
+          // 20250909 格式
+          [, year, month, day] = match;
+        } else {
+          // 9.9.2025 或 9-9-2025 格式
+          [, day, month, year] = match;
+        }
+
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // 检查缓存是否过期
+  private isCacheExpired(cacheKey: string): boolean {
+    const timestamp = this.cacheTimestamps.get(cacheKey);
+    if (!timestamp) return true;
+    return Date.now() - timestamp > this.CACHE_DURATION;
+  }
+
+  // 设置缓存
+  private setCache(cacheKey: string, data: any): void {
+    this.cache.set(cacheKey, data);
+    this.cacheTimestamps.set(cacheKey, Date.now());
+  }
+
+  // 获取年份文件夹列表
+  async getYearFolders(): Promise<string[]> {
+    const cacheKey = 'yearFolders';
+    if (this.cache.has(cacheKey) && !this.isCacheExpired(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    try {
+      const response = await axios.get<GitHubFile[]>(
+        `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${ARCHIVE_PATH}?ref=main`
+      );
+
+      const yearFolders = response.data
+        .filter(item => item.type === 'dir')
+        .map(item => item.name)
+        .sort();
+
+      this.setCache(cacheKey, yearFolders);
+      return yearFolders;
+    } catch (error) {
+      console.error('获取年份文件夹失败:', error);
+      throw new Error('无法获取年份文件夹列表');
+    }
+  }
+
+  // 获取指定年份的文章列表
+  async getArticlesByYear(year: string): Promise<Article[]> {
+    const cacheKey = `articles_${year}`;
+    if (this.cache.has(cacheKey) && !this.isCacheExpired(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    try {
+      const response = await axios.get<GitHubFile[]>(
+        `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${ARCHIVE_PATH}/${year}?ref=main`
+      );
+
+      const articles = response.data
+        .filter(item => item.type === 'file' && item.name.endsWith('.md'))
+        .map(item => {
+          const date = this.parseDateFromFilename(item.name);
+          return {
+            name: item.name,
+            path: item.path,
+            downloadUrl: item.download_url || '',
+            size: item.size,
+            date: date || undefined
+          };
+        })
+        .sort((a, b) => {
+          // 如果有日期，按日期倒序排列（最新的在前）
+          if (a.date && b.date) {
+            return b.date.getTime() - a.date.getTime();
+          }
+          // 如果只有一个有日期，有日期的排在前面
+          if (a.date && !b.date) return -1;
+          if (!a.date && b.date) return 1;
+          // 如果都没有日期，按文件名排序
+          return a.name.localeCompare(b.name);
+        });
+
+      this.setCache(cacheKey, articles);
+      return articles;
+    } catch (error) {
+      console.error(`获取 ${year} 年文章列表失败:`, error);
+      throw new Error(`无法获取 ${year} 年的文章列表`);
+    }
+  }
+
+  // 获取文章内容
+  async getArticleContent(downloadUrl: string): Promise<string> {
+    const cacheKey = `content_${downloadUrl}`;
+    if (this.cache.has(cacheKey) && !this.isCacheExpired(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
+    try {
+      const response = await axios.get(downloadUrl);
+      const content = response.data;
+      
+      this.setCache(cacheKey, content);
+      return content;
+    } catch (error) {
+      console.error('获取文章内容失败:', error);
+      throw new Error('无法获取文章内容');
+    }
+  }
+
+  // 获取当前年份
+  getCurrentYear(): string {
+    return new Date().getFullYear().toString();
+  }
+
+  // 根据当前日期查找文章
+  findArticleByCurrentDate(articles: Article[]): Article | null {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD格式
+    
+    // 查找今天的文章
+    for (const article of articles) {
+      if (article.date) {
+        const articleDateStr = article.date.toISOString().split('T')[0];
+        if (articleDateStr === todayStr) {
+          return article;
+        }
+      }
+    }
+    
+    // 如果没找到今天的，找最近的文章
+    const articlesWithDate = articles.filter(article => article.date);
+    if (articlesWithDate.length > 0) {
+      return articlesWithDate[0]; // 已经按日期倒序排列，第一个就是最新的
+    }
+    
+    return null;
+  }
+
+  // 强制刷新缓存
+  forceRefresh(): void {
+    this.cache.clear();
+    this.cacheTimestamps.clear();
+  }
+
+  // 清除缓存
+  clearCache(): void {
+    this.cache.clear();
+    this.cacheTimestamps.clear();
+  }
+}
+
+export const githubApi = new GitHubApiService();
