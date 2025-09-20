@@ -8,14 +8,29 @@ interface ArticleContentProps {
   title: string;
   loading?: boolean;
   error?: string | null;
+  isMobile?: boolean;
+  onBack?: () => void;
+  articleDate?: Date;
 }
 
 const ArticleContent: React.FC<ArticleContentProps> = ({
   content,
   title,
   loading = false,
-  error = null
+  error = null,
+  isMobile = false,
+  onBack,
+  articleDate
 }) => {
+  // 格式化日期显示
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
   if (loading) {
     return (
       <div className="article-content">
@@ -67,9 +82,28 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
   }
 
   return (
-    <div className="article-content">
+    <div className={`article-content ${isMobile ? 'mobile' : ''}`}>
       <div className="content-header">
-        <h2>{title}</h2>
+        {isMobile && onBack && (
+          <button 
+            className="back-button"
+            onClick={onBack}
+            title="返回文章列表"
+          >
+            ← 返回
+          </button>
+        )}
+        {isMobile ? (
+          <div className="mobile-title-section">
+            {articleDate ? (
+              <span className="mobile-date">{formatDate(articleDate)}</span>
+            ) : (
+              <h2 className="mobile-title">{title}</h2>
+            )}
+          </div>
+        ) : (
+          <h2>{title}</h2>
+        )}
         <div className="content-actions">
           <button 
             className="action-button"

@@ -3,10 +3,12 @@ import YearNavigation from './components/YearNavigation';
 import ArticleList from './components/ArticleList';
 import ArticleContent from './components/ArticleContent';
 import { useAppState } from './hooks/useAppState';
+import { useMobileDetection } from './hooks/useMobileDetection';
 import './App.css';
 
 const App: React.FC = () => {
   const { state, actions } = useAppState();
+  const isMobile = useMobileDetection();
 
   // 格式化文章标题用于显示
   const formatArticleTitle = (article: any): string => {
@@ -28,26 +30,53 @@ const App: React.FC = () => {
       />
       
       <main className="main-content">
-        <div className="content-grid">
-          <aside className="sidebar">
+        {isMobile ? (
+          // 移动端布局：根据当前状态显示列表或内容
+          state.currentArticle ? (
+            <ArticleContent
+              content={state.articleContent}
+              title={formatArticleTitle(state.currentArticle)}
+              loading={state.loading.content}
+              error={state.error.content}
+              isMobile={true}
+              onBack={() => actions.selectArticle(null)} // 返回列表
+              articleDate={state.currentArticle?.date}
+            />
+          ) : (
             <ArticleList
               articles={state.articles}
               currentArticle={state.currentArticle?.path || null}
               onArticleSelect={actions.selectArticle}
               loading={state.loading.articles}
               year={state.currentYear}
+              isMobile={true}
             />
-          </aside>
-          
-          <section className="content-area">
-            <ArticleContent
-              content={state.articleContent}
-              title={formatArticleTitle(state.currentArticle)}
-              loading={state.loading.content}
-              error={state.error.content}
-            />
-          </section>
-        </div>
+          )
+        ) : (
+          // PC端布局：保持原有样式
+          <div className="content-grid">
+            <aside className="sidebar">
+              <ArticleList
+                articles={state.articles}
+                currentArticle={state.currentArticle?.path || null}
+                onArticleSelect={actions.selectArticle}
+                loading={state.loading.articles}
+                year={state.currentYear}
+                isMobile={false}
+              />
+            </aside>
+            
+            <section className="content-area">
+              <ArticleContent
+                content={state.articleContent}
+                title={formatArticleTitle(state.currentArticle)}
+                loading={state.loading.content}
+                error={state.error.content}
+                isMobile={false}
+              />
+            </section>
+          </div>
+        )}
       </main>
 
       {/* 全局错误提示 */}

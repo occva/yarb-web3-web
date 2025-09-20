@@ -8,6 +8,7 @@ interface ArticleListProps {
   onArticleSelect: (article: Article) => void;
   loading?: boolean;
   year: string;
+  isMobile?: boolean;
 }
 
 const ArticleList: React.FC<ArticleListProps> = ({
@@ -15,7 +16,8 @@ const ArticleList: React.FC<ArticleListProps> = ({
   currentArticle,
   onArticleSelect,
   loading = false,
-  year
+  year,
+  isMobile = false
 }) => {
   // 格式化文章标题（移除 .md 后缀，美化显示）
   const formatArticleTitle = (name: string): string => {
@@ -34,14 +36,6 @@ const ArticleList: React.FC<ArticleListProps> = ({
     });
   };
 
-  // 格式化文件大小
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
 
   if (loading) {
     return (
@@ -77,13 +71,13 @@ const ArticleList: React.FC<ArticleListProps> = ({
   }
 
   return (
-    <div className="article-list">
+    <div className={`article-list ${isMobile ? 'mobile' : ''}`}>
       <div className="list-header">
         <div className="header-icon">📚</div>
         <h2>YARB Web3</h2>
       </div>
       <div className="article-items">
-        {articles.map((article, index) => (
+        {articles.map((article) => (
           <div
             key={article.path}
             className={`article-item ${
@@ -91,16 +85,33 @@ const ArticleList: React.FC<ArticleListProps> = ({
             }`}
             onClick={() => onArticleSelect(article)}
           >
-            <div className="article-info">
-              <h3 className="article-title">
-                {formatArticleTitle(article.name)}
-              </h3>
-              {article.date && (
-                <p className="article-date">
-                  {formatDate(article.date)}
-                </p>
-              )}
-            </div>
+            {isMobile ? (
+              // 移动端紧凑布局：标题和日期在同一行
+              <div className="article-info-mobile">
+                <div className="article-main">
+                  <h3 className="article-title">
+                    {formatArticleTitle(article.name)}
+                  </h3>
+                  {article.date && (
+                    <span className="article-date">
+                      {formatDate(article.date)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // PC端原有布局
+              <div className="article-info">
+                <h3 className="article-title">
+                  {formatArticleTitle(article.name)}
+                </h3>
+                {article.date && (
+                  <p className="article-date">
+                    {formatDate(article.date)}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -142,8 +142,15 @@ export const useAppState = () => {
   }, [state.currentYear, loadArticles]);
 
   // 选择文章
-  const selectArticle = useCallback((article: Article) => {
-    if (article.path !== state.currentArticle?.path) {
+  const selectArticle = useCallback((article: Article | null) => {
+    if (article === null) {
+      // 清除当前文章选择
+      setState(prev => ({
+        ...prev,
+        currentArticle: null,
+        articleContent: '',
+      }));
+    } else if (article.path !== state.currentArticle?.path) {
       loadArticleContent(article);
     }
   }, [state.currentArticle, loadArticleContent]);
