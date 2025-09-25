@@ -39,6 +39,30 @@ class GitHubApiService {
   private cache = new Map<string, any>();
   private cacheTimestamps = new Map<string, number>();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+  
+  // 创建axios实例，设置默认配置
+  private axiosInstance = axios.create({
+    baseURL: GITHUB_API_BASE,
+    headers: {
+      'User-Agent': 'YARB-Web3-App/1.0.0',
+      'Accept': 'application/vnd.github.v3+json'
+    },
+    timeout: 10000 // 10秒超时
+  });
+
+  // 添加请求拦截器，处理错误
+  constructor() {
+    this.axiosInstance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 403) {
+          console.warn('GitHub API 403错误，可能是请求频率限制');
+          // 可以在这里添加重试逻辑或者降级处理
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
 
   // 从文件名解析日期
   private parseDateFromFilename(filename: string): Date | null {
@@ -98,8 +122,8 @@ class GitHubApiService {
     }
 
     try {
-      const response = await axios.get<GitHubFile[]>(
-        `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${ARCHIVE_PATH}?ref=main`
+      const response = await this.axiosInstance.get<GitHubFile[]>(
+        `/repos/${REPO_OWNER}/${REPO_NAME}/contents/${ARCHIVE_PATH}?ref=main`
       );
 
       const yearFolders = response.data
@@ -109,8 +133,17 @@ class GitHubApiService {
 
       this.setCache(cacheKey, yearFolders);
       return yearFolders;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取年份文件夹失败:', error);
+      
+      // 如果是403错误，提供降级处理
+      if (error.response?.status === 403) {
+        console.warn('GitHub API访问受限，使用默认年份列表');
+        const defaultYears = ['2025', '2024', '2023', '2022'];
+        this.setCache(cacheKey, defaultYears);
+        return defaultYears;
+      }
+      
       throw new Error('无法获取年份文件夹列表');
     }
   }
@@ -123,8 +156,8 @@ class GitHubApiService {
     }
 
     try {
-      const response = await axios.get<GitHubFile[]>(
-        `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${ARCHIVE_PATH}/${year}?ref=main`
+      const response = await this.axiosInstance.get<GitHubFile[]>(
+        `/repos/${REPO_OWNER}/${REPO_NAME}/contents/${ARCHIVE_PATH}/${year}?ref=main`
       );
 
       const articles = response.data
@@ -153,8 +186,15 @@ class GitHubApiService {
 
       this.setCache(cacheKey, articles);
       return articles;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`获取 ${year} 年文章列表失败:`, error);
+      
+      // 如果是403错误，提供降级处理
+      if (error.response?.status === 403) {
+        console.warn(`GitHub API访问受限，${year}年文章列表为空`);
+        return [];
+      }
+      
       throw new Error(`无法获取 ${year} 年的文章列表`);
     }
   }
@@ -167,13 +207,20 @@ class GitHubApiService {
     }
 
     try {
-      const response = await axios.get(downloadUrl);
+      const response = await this.axiosInstance.get(downloadUrl);
       const content = response.data;
       
       this.setCache(cacheKey, content);
       return content;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取文章内容失败:', error);
+      
+      // 如果是403错误，提供降级处理
+      if (error.response?.status === 403) {
+        console.warn('GitHub API访问受限，返回默认内容');
+        return '## 文章内容暂时无法加载\n\n由于GitHub API访问限制，文章内容暂时无法显示。请稍后再试。';
+      }
+      
       throw new Error('无法获取文章内容');
     }
   }

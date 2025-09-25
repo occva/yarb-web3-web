@@ -1,0 +1,31 @@
+.back-to-top {
+  position: fixed;
+  right: 5%;
+  bottom: 5%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0.9);
+  transition: transform 0.15s ease, opacity 0.2s ease;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.back-to-top:hover {
+  transform: scale(1.05);
+}
+
+.back-to-top.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+

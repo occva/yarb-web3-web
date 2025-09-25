@@ -5,6 +5,7 @@ import ArticleContent from './components/ArticleContent';
 import { useAppState } from './hooks/useAppState';
 import { useMobileDetection } from './hooks/useMobileDetection';
 import './App.css';
+import BackToTop from './components/BackToTop';
 
 const App: React.FC = () => {
   const { state, actions } = useAppState();
@@ -101,6 +102,7 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      {!isMobile && <BackToTop targetSelector=".content-body" alwaysVisible />}
     </div>
   );
 };
