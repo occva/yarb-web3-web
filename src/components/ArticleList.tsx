@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Article } from '../services/githubApi';
 import './ArticleList.css';
 
 interface ArticleListProps {
   articles: Article[];
   currentArticle: string | null;
-  onArticleSelect: (article: Article) => void;
+  onArticleSelect: (article: Article | null) => void;
   loading?: boolean;
   year: string;
   isMobile?: boolean;
@@ -20,21 +20,67 @@ const ArticleList: React.FC<ArticleListProps> = ({
   isMobile = false
 }) => {
   // 格式化文章标题（移除 .md 后缀，美化显示）
-  const formatArticleTitle = (name: string): string => {
+  const formatArticleTitle = useCallback((name: string): string => {
     return name
       .replace(/\.md$/, '')
       .replace(/_/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase());
-  };
+  }, []);
 
   // 格式化日期显示
-  const formatDate = (date: Date): string => {
+  const formatDate = useCallback((date: Date): string => {
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: 'numeric',
       day: 'numeric'
     });
-  };
+  }, []);
+
+  // 处理文章点击
+  const handleArticleClick = useCallback((article: Article) => {
+    onArticleSelect(article);
+  }, [onArticleSelect]);
+
+  // 使用useMemo缓存文章列表渲染
+  const articleItems = useMemo(() => {
+    return articles.map((article) => (
+      <div
+        key={article.path}
+        className={`article-item ${
+          currentArticle === article.path ? 'active' : ''
+        }`}
+        onClick={() => handleArticleClick(article)}
+      >
+        {isMobile ? (
+          // 移动端紧凑布局：标题和日期在同一行
+          <div className="article-info-mobile">
+            <div className="article-main">
+              <h3 className="article-title">
+                {formatArticleTitle(article.name)}
+              </h3>
+              {article.date && (
+                <span className="article-date">
+                  {formatDate(article.date)}
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          // PC端原有布局
+          <div className="article-info">
+            <h3 className="article-title">
+              {formatArticleTitle(article.name)}
+            </h3>
+            {article.date && (
+              <p className="article-date">
+                {formatDate(article.date)}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    ));
+  }, [articles, currentArticle, isMobile, formatArticleTitle, formatDate, handleArticleClick]);
 
 
   if (loading) {
@@ -77,46 +123,10 @@ const ArticleList: React.FC<ArticleListProps> = ({
         <h2>YARB Web3</h2>
       </div>
       <div className="article-items">
-        {articles.map((article) => (
-          <div
-            key={article.path}
-            className={`article-item ${
-              currentArticle === article.path ? 'active' : ''
-            }`}
-            onClick={() => onArticleSelect(article)}
-          >
-            {isMobile ? (
-              // 移动端紧凑布局：标题和日期在同一行
-              <div className="article-info-mobile">
-                <div className="article-main">
-                  <h3 className="article-title">
-                    {formatArticleTitle(article.name)}
-                  </h3>
-                  {article.date && (
-                    <span className="article-date">
-                      {formatDate(article.date)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ) : (
-              // PC端原有布局
-              <div className="article-info">
-                <h3 className="article-title">
-                  {formatArticleTitle(article.name)}
-                </h3>
-                {article.date && (
-                  <p className="article-date">
-                    {formatDate(article.date)}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+        {articleItems}
       </div>
     </div>
   );
 };
 
-export default ArticleList;
+export default React.memo(ArticleList);

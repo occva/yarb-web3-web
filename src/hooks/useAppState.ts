@@ -125,6 +125,12 @@ export const useAppState = () => {
         articleContent: content,
         loading: { ...prev.loading, content: false },
       }));
+
+      // 预加载相邻文章
+      const currentIndex = state.articles.findIndex(a => a.path === article.path);
+      if (currentIndex !== -1) {
+        githubApi.preloadArticles(state.articles, currentIndex, 2);
+      }
     } catch (error) {
       setState(prev => ({
         ...prev,
@@ -132,7 +138,7 @@ export const useAppState = () => {
         error: { ...prev.error, content: error instanceof Error ? error.message : '加载文章内容失败' },
       }));
     }
-  }, []);
+  }, [state.articles]);
 
   // 切换年份
   const changeYear = useCallback((year: string) => {

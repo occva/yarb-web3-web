@@ -38,7 +38,9 @@ export interface YearFolder {
 class GitHubApiService {
   private cache = new Map<string, any>();
   private cacheTimestamps = new Map<string, number>();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+  private readonly CACHE_DURATION = 30 * 60 * 1000; // 30分钟缓存
+  private preloadQueue = new Set<string>(); // 预加载队列
+  private preloadCache = new Map<string, Promise<string>>(); // 预加载缓存
   
   // 创建axios实例，设置默认配置
   private axiosInstance = axios.create({
@@ -206,6 +208,11 @@ class GitHubApiService {
       return this.cache.get(cacheKey);
     }
 
+    // 检查是否正在预加载
+    if (this.preloadCache.has(downloadUrl)) {
+      return this.preloadCache.get(downloadUrl)!;
+    }
+
     try {
       const response = await this.axiosInstance.get(downloadUrl);
       const content = response.data;
@@ -223,6 +230,51 @@ class GitHubApiService {
       
       throw new Error('无法获取文章内容');
     }
+  }
+
+  // 预加载文章内容
+  async preloadArticleContent(downloadUrl: string): Promise<void> {
+    if (this.preloadQueue.has(downloadUrl) || this.cache.has(`content_${downloadUrl}`)) {
+      return;
+    }
+
+    this.preloadQueue.add(downloadUrl);
+    
+    const preloadPromise = this.axiosInstance.get(downloadUrl)
+      .then(response => {
+        const content = response.data;
+        this.setCache(`content_${downloadUrl}`, content);
+        this.preloadQueue.delete(downloadUrl);
+        this.preloadCache.delete(downloadUrl);
+        return content;
+      })
+      .catch(error => {
+        console.warn('预加载文章内容失败:', error);
+        this.preloadQueue.delete(downloadUrl);
+        this.preloadCache.delete(downloadUrl);
+        throw error;
+      });
+
+    this.preloadCache.set(downloadUrl, preloadPromise);
+  }
+
+  // 批量预加载文章内容
+  async preloadArticles(articles: Article[], currentIndex: number, preloadCount: number = 3): Promise<void> {
+    const preloadPromises: Promise<void>[] = [];
+    
+    // 预加载当前文章前后的文章
+    for (let i = Math.max(0, currentIndex - preloadCount); 
+         i <= Math.min(articles.length - 1, currentIndex + preloadCount); 
+         i++) {
+      if (i !== currentIndex && articles[i]) {
+        preloadPromises.push(this.preloadArticleContent(articles[i].downloadUrl));
+      }
+    }
+    
+    // 并行预加载，不等待结果
+    Promise.allSettled(preloadPromises).catch(error => {
+      console.warn('批量预加载失败:', error);
+    });
   }
 
   // 获取当前年份

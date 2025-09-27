@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './ArticleContent.css';
@@ -23,13 +23,70 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
   articleDate
 }) => {
   // 格式化日期显示
-  const formatDate = (date: Date): string => {
+  const formatDate = useCallback((date: Date): string => {
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
     });
-  };
+  }, []);
+
+  // 处理复制内容
+  const handleCopyContent = useCallback(() => {
+    navigator.clipboard.writeText(content);
+    // 简单的提示，实际项目中可以用更好的提示组件
+    alert('文章内容已复制到剪贴板');
+  }, [content]);
+
+  // 处理打印
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  // 使用useMemo缓存markdown组件配置
+  const markdownComponents = useMemo(() => ({
+    // 自定义代码块样式
+    code: ({ node, inline, className, children, ...props }: any) => {
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <pre className="code-block">
+          <code className={className} {...props}>
+            {children}
+          </code>
+        </pre>
+      ) : (
+        <code className="inline-code" {...props}>
+          {children}
+        </code>
+      );
+    },
+    // 自定义表格样式
+    table: ({ children }: any) => (
+      <div className="table-wrapper">
+        <table className="markdown-table">{children}</table>
+      </div>
+    ),
+    // 自定义链接样式
+    a: ({ href, children }: any) => (
+      <a 
+        href={href} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="markdown-link"
+      >
+        {children}
+      </a>
+    ),
+    // 自定义图片样式
+    img: ({ src, alt }: any) => (
+      <img 
+        src={src} 
+        alt={alt} 
+        className="markdown-image"
+        loading="lazy"
+      />
+    )
+  }), []);
 
   if (loading) {
     return (
@@ -107,18 +164,14 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
         <div className="content-actions">
           <button 
             className="action-button"
-            onClick={() => window.print()}
+            onClick={handlePrint}
             title="打印文章"
           >
             🖨️
           </button>
           <button 
             className="action-button"
-            onClick={() => {
-              navigator.clipboard.writeText(content);
-              // 简单的提示，实际项目中可以用更好的提示组件
-              alert('文章内容已复制到剪贴板');
-            }}
+            onClick={handleCopyContent}
             title="复制内容"
           >
             📋
@@ -128,49 +181,7 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
       <div className="content-body">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          components={{
-            // 自定义代码块样式
-            code: ({ node, inline, className, children, ...props }) => {
-              const match = /language-(\w+)/.exec(className || '');
-              return !inline && match ? (
-                <pre className="code-block">
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                </pre>
-              ) : (
-                <code className="inline-code" {...props}>
-                  {children}
-                </code>
-              );
-            },
-            // 自定义表格样式
-            table: ({ children }) => (
-              <div className="table-wrapper">
-                <table className="markdown-table">{children}</table>
-              </div>
-            ),
-            // 自定义链接样式
-            a: ({ href, children }) => (
-              <a 
-                href={href} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="markdown-link"
-              >
-                {children}
-              </a>
-            ),
-            // 自定义图片样式
-            img: ({ src, alt }) => (
-              <img 
-                src={src} 
-                alt={alt} 
-                className="markdown-image"
-                loading="lazy"
-              />
-            )
-          }}
+          components={markdownComponents}
         >
           {content}
         </ReactMarkdown>
@@ -179,4 +190,4 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
   );
 };
 
-export default ArticleContent;
+export default React.memo(ArticleContent);

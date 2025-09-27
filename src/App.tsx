@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import YearNavigation from './components/YearNavigation';
 import ArticleList from './components/ArticleList';
 import ArticleContent from './components/ArticleContent';
 import { useAppState } from './hooks/useAppState';
 import { useMobileDetection } from './hooks/useMobileDetection';
+import { Article } from './services/githubApi';
 import './App.css';
 import BackToTop from './components/BackToTop';
 
@@ -12,13 +13,13 @@ const App: React.FC = () => {
   const isMobile = useMobileDetection();
 
   // 格式化文章标题用于显示
-  const formatArticleTitle = (article: any): string => {
+  const formatArticleTitle = useMemo(() => (article: any): string => {
     if (!article) return '文章内容';
     return article.name
       .replace(/\.md$/, '')
       .replace(/_/g, ' ')
       .replace(/\b\w/g, (l: string) => l.toUpperCase());
-  };
+  }, []);
 
   return (
     <div className="app">
@@ -46,7 +47,7 @@ const App: React.FC = () => {
           ) : (
             <ArticleList
               articles={state.articles}
-              currentArticle={state.currentArticle?.path || null}
+              currentArticle={(state.currentArticle as Article | null)?.path ?? null}
               onArticleSelect={actions.selectArticle}
               loading={state.loading.articles}
               year={state.currentYear}
@@ -59,7 +60,7 @@ const App: React.FC = () => {
             <aside className="sidebar">
               <ArticleList
                 articles={state.articles}
-                currentArticle={state.currentArticle?.path || null}
+                currentArticle={(state.currentArticle as Article | null)?.path ?? null}
                 onArticleSelect={actions.selectArticle}
                 loading={state.loading.articles}
                 year={state.currentYear}
