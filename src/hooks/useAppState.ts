@@ -50,8 +50,25 @@ export const useAppState = () => {
       const years = await githubApi.getYearFolders();
       const currentYear = githubApi.getCurrentYear();
       
-      // 优先选择当前年份，如果不存在则选择第一个年份
-      const defaultYear = years.includes(currentYear) ? currentYear : (years[0] || '');
+      // 优先选择当前年份，如果不存在则选择最新年份
+      const getLatestYear = (yearList: string[]): string => {
+        if (yearList.length === 0) return currentYear;
+        
+        // 尝试解析为数字并找到最大值
+        const numericYears = yearList
+          .map(year => parseInt(year))
+          .filter(year => !isNaN(year));
+        
+        if (numericYears.length > 0) {
+          return Math.max(...numericYears).toString();
+        }
+        
+        // 如果无法解析为数字，按字符串排序取最后一个
+        return yearList.sort().pop() || currentYear;
+      };
+      
+      const latestYear = getLatestYear(years);
+      const defaultYear = years.includes(currentYear) ? currentYear : latestYear;
       
       setState(prev => ({
         ...prev,
@@ -93,10 +110,10 @@ export const useAppState = () => {
         loading: { ...prev.loading, articles: false },
       }));
 
-      // 自动选择当前日期的文章，如果没有则选择第一篇文章
+      // 自动选择当前日期的文章，如果没有则选择最新的文章（第一篇，因为已经按时间/序号倒序排列）
       if (articles.length > 0) {
         const currentDateArticle = githubApi.findArticleByCurrentDate(articles);
-        const articleToLoad = currentDateArticle || articles[0];
+        const articleToLoad = currentDateArticle || articles[0]; // articles[0]就是最新的文章
         await loadArticleContent(articleToLoad);
       }
     } catch (error) {

@@ -1,9 +1,9 @@
 .back-to-top {
   position: fixed;
-  right: 5%;
-  bottom: 5%;
-  width: 42px;
-  height: 42px;
+  right: 20px;
+  bottom: 80px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: none;
   background: rgba(0, 0, 0, 0.6);
@@ -16,7 +16,7 @@
   transition: transform 0.15s ease, opacity 0.2s ease;
   opacity: 0;
   pointer-events: none;
-  z-index: 1000;
+  z-index: 99;
 }
 
 .back-to-top:hover {
@@ -28,4 +28,12 @@
   pointer-events: auto;
 }
 
-
+/* 移动端适配 */
+@media (max-width: 640px) {
+  .back-to-top {
+    bottom: 72px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+  }
+}

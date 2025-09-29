@@ -112,23 +112,67 @@
 }
 
 @media (max-width: 768px) {
+  .nav-container {
+    padding: 0;
+  }
+  
   .nav-content {
     gap: 0.75rem;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 1rem;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    flex-wrap: nowrap;
+  }
+  
+  .nav-content::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+  
+  .year-buttons {
+    flex-wrap: nowrap;
+    min-width: max-content;
   }
   
   .year-button {
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   
   .refresh-button {
     min-width: 36px;
     height: 36px;
     font-size: 0.875rem;
+    flex-shrink: 0;
   }
   
   .skeleton-button {
     width: 50px;
     height: 32px;
+    flex-shrink: 0;
+  }
+  
+  .loading-skeleton {
+    flex-wrap: nowrap;
+  }
+  
+  /* 滑动提示 */
+  .nav-content.scrollable {
+    position: relative;
+  }
+  
+  .nav-content.scrollable::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.8));
+    pointer-events: none;
+    z-index: 1;
   }
 }

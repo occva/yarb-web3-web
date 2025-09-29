@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import YearNavigation from './components/YearNavigation';
 import ArticleList from './components/ArticleList';
 import ArticleContent from './components/ArticleContent';
+import Settings from './components/Settings';
+import SettingsButton from './components/SettingsButton';
 import { useAppState } from './hooks/useAppState';
 import { useMobileDetection } from './hooks/useMobileDetection';
 import { Article } from './services/githubApi';
@@ -11,6 +13,7 @@ import BackToTop from './components/BackToTop';
 const App: React.FC = () => {
   const { state, actions } = useAppState();
   const isMobile = useMobileDetection();
+  const [showSettings, setShowSettings] = useState(false);
 
   // 格式化文章标题用于显示
   const formatArticleTitle = useMemo(() => (article: any): string => {
@@ -104,6 +107,19 @@ const App: React.FC = () => {
         </div>
       )}
       {!isMobile && <BackToTop targetSelector=".content-body" alwaysVisible />}
+      
+      {/* 设置按钮 */}
+      <SettingsButton onClick={() => setShowSettings(true)} />
+      
+      {/* 设置弹窗 */}
+      <Settings 
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        onConfigChange={() => {
+          // 配置更改后重新加载数据
+          actions.forceRefresh();
+        }}
+      />
     </div>
   );
 };

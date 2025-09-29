@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './YearNavigation.css';
 
 interface YearNavigationProps {
@@ -16,10 +16,32 @@ const YearNavigation: React.FC<YearNavigationProps> = ({
   loading = false,
   onRefresh
 }) => {
+  const navContentRef = useRef<HTMLDivElement>(null);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+
+  // 检查是否需要显示滑动提示
+  useEffect(() => {
+    const checkScrollable = () => {
+      if (navContentRef.current && window.innerWidth <= 768) {
+        const { scrollWidth, clientWidth } = navContentRef.current;
+        setShowScrollHint(scrollWidth > clientWidth);
+      } else {
+        setShowScrollHint(false);
+      }
+    };
+
+    checkScrollable();
+    window.addEventListener('resize', checkScrollable);
+    return () => window.removeEventListener('resize', checkScrollable);
+  }, [years]);
+
   return (
     <nav className="year-navigation">
       <div className="nav-container">
-        <div className="nav-content">
+        <div 
+          className={`nav-content ${showScrollHint ? 'scrollable' : ''}`}
+          ref={navContentRef}
+        >
           <div className="year-buttons">
             {loading ? (
               <div className="loading-skeleton">
