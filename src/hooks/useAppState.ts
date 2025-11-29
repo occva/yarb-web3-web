@@ -168,9 +168,12 @@ export const useAppState = () => {
         if (prev.currentArticle?.path === article.path) {
           return prev;
         }
-        // 异步加载文章内容，使用当前 articles
+        // 立即更新当前文章，然后异步加载文章内容
         loadArticleContent(article, prev.articles);
-        return prev;
+        return {
+          ...prev,
+          currentArticle: article,
+        };
       });
     }
   }, [loadArticleContent]);

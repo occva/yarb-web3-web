@@ -113,5 +113,5 @@ const ArticleList: React.FC<ArticleListProps> = ({
   );
 };
 
-export default React.memo(ArticleList);
+export default ArticleList;
 
