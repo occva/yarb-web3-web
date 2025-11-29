@@ -92,7 +92,7 @@
 }
 
 .url-input {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Noto Sans', monospace;
   font-size: 0.8rem;
 }
 
@@ -229,7 +229,7 @@
 }
 
 .folder-name {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Noto Sans', monospace;
   font-size: 0.875rem;
   color: #374151;
 }
@@ -363,3 +363,4 @@
     flex: 1;
   }
 }
+

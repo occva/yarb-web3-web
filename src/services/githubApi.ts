@@ -1,45 +1,15 @@
 import axios from 'axios';
-import { configService, GitHubRepoConfig } from './configService';
-
-// GitHub API 基础配置
-const GITHUB_API_BASE = 'https://api.github.com';
-
-// GitHub API 接口类型定义
-export interface GitHubFile {
-  name: string;
-  path: string;
-  sha: string;
-  size: number;
-  url: string;
-  html_url: string;
-  git_url: string;
-  download_url: string | null;
-  type: 'file' | 'dir';
-  content?: string;
-  encoding?: string;
-}
-
-export interface Article {
-  name: string;
-  path: string;
-  downloadUrl: string;
-  size: number;
-  date?: Date;
-  number?: number;
-}
-
-export interface YearFolder {
-  name: string;
-  path: string;
-  articles: Article[];
-}
+import { configService } from './configService';
+import { GitHubFile, Article, GitHubRepoConfig } from '../types';
+import { GITHUB_API_BASE, CACHE_DURATION, PRELOAD_CONFIG, ERROR_MESSAGES } from '../constants';
+import { parseDateFromFilename, parseNumberFromFilename } from '../utils';
 
 class GitHubApiService {
   private cache = new Map<string, any>();
   private cacheTimestamps = new Map<string, number>();
-  private readonly CACHE_DURATION = 30 * 60 * 1000; // 30分钟缓存
-  private preloadQueue = new Set<string>(); // 预加载队列
-  private preloadCache = new Map<string, Promise<string>>(); // 预加载缓存
+  private readonly CACHE_DURATION = CACHE_DURATION;
+  private preloadQueue = new Set<string>();
+  private preloadCache = new Map<string, Promise<string>>();
 
   // 获取当前配置
   private getRepoConfig(): GitHubRepoConfig {
@@ -63,74 +33,10 @@ class GitHubApiService {
       (error) => {
         if (error.response?.status === 403) {
           console.warn('GitHub API 403错误，可能是请求频率限制');
-          // 可以在这里添加重试逻辑或者降级处理
         }
         return Promise.reject(error);
       }
     );
-  }
-
-  // 从文件名解析日期和序号
-  private parseDateFromFilename(filename: string): Date | null {
-    // 尝试匹配各种日期格式
-    const patterns = [
-      /(\d{4})\.(\d{1,2})\.(\d{1,2})/,  // 2025.9.9, 2025.09.09
-      /(\d{4})-(\d{1,2})-(\d{1,2})/,   // 2025-9-9, 2025-09-09
-      /(\d{4})(\d{2})(\d{2})/,         // 20250909
-      /(\d{1,2})\.(\d{1,2})\.(\d{4})/, // 9.9.2025
-      /(\d{1,2})-(\d{1,2})-(\d{4})/,   // 9-9-2025
-    ];
-
-    for (const pattern of patterns) {
-      const match = filename.match(pattern);
-      if (match) {
-        let year, month, day;
-
-        if (pattern === patterns[0] || pattern === patterns[1]) {
-          // 2025.9.9 或 2025-9-9 格式
-          [, year, month, day] = match;
-        } else if (pattern === patterns[2]) {
-          // 20250909 格式
-          const fullMatch = match[1];
-          year = fullMatch.substring(0, 4);
-          month = fullMatch.substring(4, 6);
-          day = fullMatch.substring(6, 8);
-        } else {
-          // 9.9.2025 或 9-9-2025 格式
-          [, day, month, year] = match;
-        }
-
-        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  // 从文件名解析序号
-  private parseNumberFromFilename(filename: string): number | null {
-    // 匹配文件名开头的数字序号
-    const patterns = [
-      /^(\d+)[.\-_\s]/,     // 01. 或 01- 或 01_ 或 01 开头
-      /^第(\d+)[期章节]/,    // 第01期 或 第01章
-      /^No\.?(\d+)/i,       // No.01 或 NO01
-      /^#(\d+)/,            // #01
-    ];
-
-    for (const pattern of patterns) {
-      const match = filename.match(pattern);
-      if (match) {
-        const num = parseInt(match[1]);
-        if (!isNaN(num)) {
-          return num;
-        }
-      }
-    }
-
-    return null;
   }
 
   // 检查缓存是否过期
@@ -179,11 +85,11 @@ class GitHubApiService {
     } catch (error: any) {
       console.error('获取仓库结构失败:', error);
       if (error.response?.status === 404) {
-        throw new Error(`路径不存在: ${fullPath || '根目录'}`);
+        throw new Error(ERROR_MESSAGES.PATH_NOT_FOUND(fullPath));
       } else if (error.response?.status === 403) {
-        throw new Error('GitHub API访问受限，请稍后再试');
+        throw new Error(ERROR_MESSAGES.API_LIMITED);
       }
-      throw new Error('无法获取仓库结构');
+      throw new Error(ERROR_MESSAGES.REPO_STRUCTURE_FAILED);
     }
   }
 
@@ -223,7 +129,7 @@ class GitHubApiService {
         return defaultYears;
       }
 
-      throw new Error('无法获取年份文件夹列表');
+      throw new Error(ERROR_MESSAGES.YEAR_FOLDERS_FAILED);
     }
   }
 
@@ -252,8 +158,8 @@ class GitHubApiService {
       const articles = response.data
         .filter(item => item.type === 'file' && item.name.endsWith('.md'))
         .map(item => {
-          const date = this.parseDateFromFilename(item.name);
-          const number = this.parseNumberFromFilename(item.name);
+          const date = parseDateFromFilename(item.name);
+          const number = parseNumberFromFilename(item.name);
           return {
             name: item.name,
             path: item.path,
@@ -299,7 +205,7 @@ class GitHubApiService {
         return [];
       }
 
-      throw new Error(`无法获取 ${year} 年的文章列表`);
+      throw new Error(ERROR_MESSAGES.ARTICLES_FAILED(year));
     }
   }
 
@@ -330,7 +236,7 @@ class GitHubApiService {
         return '## 文章内容暂时无法加载\n\n由于GitHub API访问限制，文章内容暂时无法显示。请稍后再试。';
       }
 
-      throw new Error('无法获取文章内容');
+      throw new Error(ERROR_MESSAGES.ARTICLE_CONTENT_FAILED);
     }
   }
 
@@ -361,7 +267,7 @@ class GitHubApiService {
   }
 
   // 批量预加载文章内容
-  async preloadArticles(articles: Article[], currentIndex: number, preloadCount: number = 3): Promise<void> {
+  async preloadArticles(articles: Article[], currentIndex: number, preloadCount: number = PRELOAD_CONFIG.ARTICLE_COUNT): Promise<void> {
     const preloadPromises: Promise<void>[] = [];
 
     // 预加载当前文章前后的文章

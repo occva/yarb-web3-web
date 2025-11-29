@@ -1,13 +1,15 @@
 import React from 'react';
+import { SettingsButtonProps } from '../../types';
 import './SettingsButton.css';
-
-interface SettingsButtonProps {
-  onClick: () => void;
-}
 
 const SettingsButton: React.FC<SettingsButtonProps> = ({ onClick }) => {
   return (
-    <button className="settings-button" onClick={onClick} title="仓库设置">
+    <button 
+      className="settings-button" 
+      onClick={onClick} 
+      title="仓库设置"
+      aria-label="打开仓库设置"
+    >
       <svg 
         width="20" 
         height="20" 
@@ -26,3 +28,4 @@ const SettingsButton: React.FC<SettingsButtonProps> = ({ onClick }) => {
 };
 
 export default SettingsButton;
+

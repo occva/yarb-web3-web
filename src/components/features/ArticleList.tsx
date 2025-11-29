@@ -1,15 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
-import { Article } from '../services/githubApi';
+import { ArticleListProps } from '../../types';
+import { formatArticleTitle, formatDate } from '../../utils';
 import './ArticleList.css';
-
-interface ArticleListProps {
-  articles: Article[];
-  currentArticle: string | null;
-  onArticleSelect: (article: Article | null) => void;
-  loading?: boolean;
-  year: string;
-  isMobile?: boolean;
-}
 
 const ArticleList: React.FC<ArticleListProps> = ({
   articles,
@@ -19,25 +11,8 @@ const ArticleList: React.FC<ArticleListProps> = ({
   year,
   isMobile = false
 }) => {
-  // 格式化文章标题（移除 .md 后缀，美化显示）
-  const formatArticleTitle = useCallback((name: string): string => {
-    return name
-      .replace(/\.md$/, '')
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase());
-  }, []);
-
-  // 格式化日期显示
-  const formatDate = useCallback((date: Date): string => {
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric'
-    });
-  }, []);
-
   // 处理文章点击
-  const handleArticleClick = useCallback((article: Article) => {
+  const handleArticleClick = useCallback((article: any) => {
     onArticleSelect(article);
   }, [onArticleSelect]);
 
@@ -50,6 +25,15 @@ const ArticleList: React.FC<ArticleListProps> = ({
           currentArticle === article.path ? 'active' : ''
         }`}
         onClick={() => handleArticleClick(article)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleArticleClick(article);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`查看文章: ${formatArticleTitle(article.name)}`}
       >
         {isMobile ? (
           // 移动端紧凑布局：标题和日期在同一行
@@ -80,7 +64,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
         )}
       </div>
     ));
-  }, [articles, currentArticle, isMobile, formatArticleTitle, formatDate, handleArticleClick]);
+  }, [articles, currentArticle, isMobile, handleArticleClick]);
 
 
   if (loading) {
@@ -130,3 +114,4 @@ const ArticleList: React.FC<ArticleListProps> = ({
 };
 
 export default React.memo(ArticleList);
+

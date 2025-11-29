@@ -1,23 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { githubApi, Article } from '../services/githubApi';
-
-export interface AppState {
-  years: string[];
-  currentYear: string;
-  articles: Article[];
-  currentArticle: Article | null;
-  articleContent: string;
-  loading: {
-    years: boolean;
-    articles: boolean;
-    content: boolean;
-  };
-  error: {
-    years: string | null;
-    articles: string | null;
-    content: string | null;
-  };
-}
+import { githubApi } from '../services/githubApi';
+import { AppState, Article } from '../types';
 
 export const useAppState = () => {
   const [state, setState] = useState<AppState>({
@@ -37,6 +20,78 @@ export const useAppState = () => {
       content: null,
     },
   });
+
+  // 加载指定年份的文章列表
+  const loadArticles = useCallback(async (year: string) => {
+    setState(prev => ({
+      ...prev,
+      currentYear: year,
+      articles: [],
+      currentArticle: null,
+      articleContent: '',
+      loading: { ...prev.loading, articles: true },
+      error: { ...prev.error, articles: null },
+    }));
+
+    try {
+      const articles = await githubApi.getArticlesByYear(year);
+      setState(prev => ({
+        ...prev,
+        articles,
+        loading: { ...prev.loading, articles: false },
+      }));
+
+      // 自动选择当前日期的文章，如果没有则选择最新的文章（第一篇，因为已经按时间/序号倒序排列）
+      if (articles.length > 0) {
+        const currentDateArticle = githubApi.findArticleByCurrentDate(articles);
+        const articleToLoad = currentDateArticle || articles[0];
+        await loadArticleContent(articleToLoad, articles);
+      }
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        loading: { ...prev.loading, articles: false },
+        error: { ...prev.error, articles: error instanceof Error ? error.message : '加载文章列表失败' },
+      }));
+    }
+  }, []);
+
+  // 加载文章内容
+  const loadArticleContent = useCallback(async (article: Article, articles?: Article[]) => {
+    setState(prev => ({
+      ...prev,
+      currentArticle: article,
+      articleContent: '',
+      loading: { ...prev.loading, content: true },
+      error: { ...prev.error, content: null },
+    }));
+
+    try {
+      const content = await githubApi.getArticleContent(article.downloadUrl);
+      setState(prev => {
+        // 使用传入的 articles 或当前 state 中的 articles
+        const articlesList = articles || prev.articles;
+        const currentIndex = articlesList.findIndex(a => a.path === article.path);
+        
+        // 预加载相邻文章
+        if (currentIndex !== -1) {
+          githubApi.preloadArticles(articlesList, currentIndex, 2);
+        }
+        
+        return {
+          ...prev,
+          articleContent: content,
+          loading: { ...prev.loading, content: false },
+        };
+      });
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        loading: { ...prev.loading, content: false },
+        error: { ...prev.error, content: error instanceof Error ? error.message : '加载文章内容失败' },
+      }));
+    }
+  }, []);
 
   // 加载年份列表
   const loadYears = useCallback(async () => {
@@ -64,7 +119,7 @@ export const useAppState = () => {
         }
         
         // 如果无法解析为数字，按字符串排序取最后一个
-        return yearList.sort().pop() || currentYear;
+        return [...yearList].sort().pop() || currentYear;
       };
       
       const latestYear = getLatestYear(years);
@@ -88,74 +143,8 @@ export const useAppState = () => {
         error: { ...prev.error, years: error instanceof Error ? error.message : '加载年份失败' },
       }));
     }
-  }, []);
+  }, [loadArticles]);
 
-  // 加载指定年份的文章列表
-  const loadArticles = useCallback(async (year: string) => {
-    setState(prev => ({
-      ...prev,
-      currentYear: year,
-      articles: [],
-      currentArticle: null,
-      articleContent: '',
-      loading: { ...prev.loading, articles: true },
-      error: { ...prev.error, articles: null },
-    }));
-
-    try {
-      const articles = await githubApi.getArticlesByYear(year);
-      setState(prev => ({
-        ...prev,
-        articles,
-        loading: { ...prev.loading, articles: false },
-      }));
-
-      // 自动选择当前日期的文章，如果没有则选择最新的文章（第一篇，因为已经按时间/序号倒序排列）
-      if (articles.length > 0) {
-        const currentDateArticle = githubApi.findArticleByCurrentDate(articles);
-        const articleToLoad = currentDateArticle || articles[0]; // articles[0]就是最新的文章
-        await loadArticleContent(articleToLoad);
-      }
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        loading: { ...prev.loading, articles: false },
-        error: { ...prev.error, articles: error instanceof Error ? error.message : '加载文章列表失败' },
-      }));
-    }
-  }, []);
-
-  // 加载文章内容
-  const loadArticleContent = useCallback(async (article: Article) => {
-    setState(prev => ({
-      ...prev,
-      currentArticle: article,
-      articleContent: '',
-      loading: { ...prev.loading, content: true },
-      error: { ...prev.error, content: null },
-    }));
-
-    try {
-      const content = await githubApi.getArticleContent(article.downloadUrl);
-      setState(prev => ({
-        ...prev,
-        articleContent: content,
-        loading: { ...prev.loading, content: false },
-      }));
-
-      // 预加载相邻文章
-      const currentIndex = state.articles.findIndex(a => a.path === article.path);
-      if (currentIndex !== -1) {
-        githubApi.preloadArticles(state.articles, currentIndex, 2);
-      }
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        loading: { ...prev.loading, content: false },
-        error: { ...prev.error, content: error instanceof Error ? error.message : '加载文章内容失败' },
-      }));
-    }
-  }, [state.articles]);
 
   // 切换年份
   const changeYear = useCallback((year: string) => {
@@ -173,10 +162,18 @@ export const useAppState = () => {
         currentArticle: null,
         articleContent: '',
       }));
-    } else if (article.path !== state.currentArticle?.path) {
-      loadArticleContent(article);
+    } else {
+      setState(prev => {
+        // 如果选择的是同一篇文章，不重新加载
+        if (prev.currentArticle?.path === article.path) {
+          return prev;
+        }
+        // 异步加载文章内容，使用当前 articles
+        loadArticleContent(article, prev.articles);
+        return prev;
+      });
     }
-  }, [state.currentArticle, loadArticleContent]);
+  }, [loadArticleContent]);
 
   // 清除错误
   const clearError = useCallback((type: keyof AppState['error']) => {
@@ -194,22 +191,25 @@ export const useAppState = () => {
 
   // 重试加载
   const retry = useCallback((type: 'years' | 'articles' | 'content') => {
-    switch (type) {
-      case 'years':
-        loadYears();
-        break;
-      case 'articles':
-        if (state.currentYear) {
-          loadArticles(state.currentYear);
-        }
-        break;
-      case 'content':
-        if (state.currentArticle) {
-          loadArticleContent(state.currentArticle);
-        }
-        break;
-    }
-  }, [loadYears, loadArticles, loadArticleContent, state.currentYear, state.currentArticle]);
+    setState(prev => {
+      switch (type) {
+        case 'years':
+          loadYears();
+          break;
+        case 'articles':
+          if (prev.currentYear) {
+            loadArticles(prev.currentYear);
+          }
+          break;
+        case 'content':
+          if (prev.currentArticle) {
+            loadArticleContent(prev.currentArticle, prev.articles);
+          }
+          break;
+      }
+      return prev;
+    });
+  }, [loadYears, loadArticles, loadArticleContent]);
 
   // 初始化加载
   useEffect(() => {

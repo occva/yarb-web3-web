@@ -6,7 +6,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Noto Sans SC', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -125,10 +125,17 @@ body {
   .article-list.mobile .list-header {
     background: #f8f9fa;
     border-bottom: 2px solid #e9ecef;
-    padding: 1rem;
+    padding: 0.625rem 1rem;
     position: sticky;
     top: 0;
     z-index: 10;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .article-list.mobile .list-header .header-icon {
+    display: none;
   }
   
   .article-list.mobile .article-items {
@@ -158,7 +165,7 @@ body {
   
   .article-list.mobile .article-title {
     flex: 1;
-    font-size: 0.9rem;
+    font-size: calc(0.9rem + 2px);
     font-weight: 500;
     color: #212529;
     margin: 0;
@@ -193,7 +200,7 @@ body {
   .article-content.mobile .content-header {
     background: #f8f9fa;
     border-bottom: 2px solid #e9ecef;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 1rem;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -201,7 +208,7 @@ body {
     align-items: center;
     gap: 0.5rem;
     flex-wrap: nowrap;
-    min-height: 50px;
+    min-height: 40px;
     overflow: hidden;
     white-space: nowrap;
     flex-direction: row;
@@ -345,9 +352,9 @@ body {
   /* 超小屏幕优化 */
   @media (max-width: 480px) {
     .article-content.mobile .content-header {
-      padding: 0.5rem 0.75rem;
+      padding: 0.4375rem 0.75rem;
       gap: 0.375rem;
-      min-height: 45px;
+      min-height: 38px;
     }
     
     .article-content.mobile .back-button {
@@ -544,3 +551,4 @@ select:focus {
     display: none;
   }
 }
+

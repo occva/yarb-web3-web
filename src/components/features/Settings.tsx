@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { configService, GitHubRepoConfig } from '../services/configService';
-import { githubApi, GitHubFile } from '../services/githubApi';
+import { SettingsProps, GitHubRepoConfig, GitHubFile } from '../../types';
+import { configService } from '../../services/configService';
+import { githubApi } from '../../services/githubApi';
+import { parseGitHubUrl, validateConfig } from '../../utils';
 import './Settings.css';
-
-interface SettingsProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfigChange: () => void;
-}
 
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) => {
   const [config, setConfig] = useState<GitHubRepoConfig>(configService.getConfig().githubRepo);
@@ -36,14 +32,14 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) 
     setGithubUrl(url);
     setTestResult(null);
     setErrors([]);
-    setAvailableFolders([]); // 清空文件夹列表
+    setAvailableFolders([]);
     
-    const parsed = configService.parseGitHubUrl(url);
+    const parsed = parseGitHubUrl(url);
     if (parsed) {
       setConfig(prev => ({
         ...prev,
         ...parsed,
-        selectedFolders: [] // 重置选中的文件夹
+        selectedFolders: []
       }));
     }
   };
@@ -56,7 +52,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) 
     
     try {
       // 验证配置
-      const validationErrors = configService.validateConfig(config);
+      const validationErrors = validateConfig(config);
       if (validationErrors.length > 0) {
         setErrors(validationErrors);
         setTestResult('error');
@@ -119,15 +115,15 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) 
   // 保存配置
   const handleSave = () => {
     try {
-      const validationErrors = configService.validateConfig(config);
+      const validationErrors = validateConfig(config);
       if (validationErrors.length > 0) {
         setErrors(validationErrors);
         return;
       }
 
       configService.updateGitHubRepo(config);
-      githubApi.forceRefresh(); // 清除缓存
-      onConfigChange(); // 通知父组件配置已更改
+      githubApi.forceRefresh();
+      onConfigChange();
       onClose();
     } catch (error) {
       setErrors(['保存配置失败: ' + (error as Error).message]);
@@ -152,7 +148,13 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) 
       <div className="settings-modal">
         <div className="settings-header">
           <h2>仓库设置</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button 
+            className="close-button" 
+            onClick={onClose}
+            aria-label="关闭设置"
+          >
+            ×
+          </button>
         </div>
         
         <div className="settings-content">
@@ -240,6 +242,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) 
               className="test-button"
               onClick={handleTestConnection}
               disabled={testing || !config.owner || !config.repo}
+              aria-label="测试GitHub仓库连接"
             >
               {testing ? '测试中...' : '测试连接'}
             </button>
@@ -324,3 +327,4 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) 
 };
 
 export default Settings;
+

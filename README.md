@@ -1,168 +1,91 @@
-# YARB Web3 文章展示网站
+# YARB Web3 - 动态文章展示系统
 
-基于 GitHub 仓库目录结构的动态文章展示网站，用于展示 [yarb-web3](https://github.com/dubuqingfeng/yarb-web3) 仓库中 `archive` 目录下的文章。
+基于 React + TypeScript 构建的现代化动态文章展示系统，能够从指定的 GitHub 仓库中自动获取目录结构并展示 Markdown 文章内容。
 
-## 功能特性
+## 🌟 核心特性
 
-- 🗂️ **动态年份导航** - 自动获取 GitHub 仓库中的年份文件夹作为导航
-- 📄 **智能文章列表** - 显示选中年份下的所有 Markdown 文章，支持按日期排序
-- 📖 **完整 Markdown 渲染** - 支持完整的 Markdown 语法和 GitHub 风格表格
-- 📱 **响应式设计** - 完美适配桌面端和移动端设备，移动端采用单页面切换模式
-- ⚡ **性能优化** - 智能缓存机制、文章预加载、骨架屏提升用户体验
-- 🎨 **现代 UI** - 美观的界面设计和流畅的交互动画
+- **🔗 动态 GitHub 仓库集成** - 支持任意 GitHub 仓库，自动解析目录结构
+- **📅 智能文章处理** - 从文件名解析日期和序号，支持多种日期格式
+- **🌐 大模型翻译功能** - 集成 SiliconFlow API，支持流式翻译文章内容
+- **⚡ 高性能优化** - 30分钟智能缓存、文章预加载、虚拟滚动
+- **📱 完美响应式设计** - 移动端单页面切换，桌面端侧边栏布局
+- **⚙️ 灵活配置管理** - 支持自定义仓库地址、分支、路径和文件夹过滤
+- **🎨 现代化 UI** - Toast 通知、骨架屏加载、平滑动画、错误边界处理
+- **🔧 开发者友好** - TypeScript 全覆盖、模块化架构、完整状态管理
 
-- 💾 **缓存管理** - 30分钟智能缓存，减少 API 请求频率
-
-## 技术栈
+## 🛠 技术栈
 
 - **前端框架**: React 18 + TypeScript
 - **构建工具**: Vite 5.0
+- **HTTP 客户端**: Axios (拦截器 + 错误处理)
 - **Markdown 渲染**: react-markdown + remark-gfm
-- **HTTP 客户端**: Axios (支持请求拦截和错误处理)
-- **状态管理**: 自定义 Hooks (useAppState, useMobileDetection, useVirtualScroll)
-- **样式**: CSS3 + 响应式设计 + 骨架屏动画
-- **性能优化**: 智能缓存、预加载、虚拟滚动
+- **状态管理**: 自定义 Hooks (完整状态机)
+- **样式方案**: CSS3 + 响应式设计 + 骨架屏
+- **性能优化**: React.memo + 智能缓存 + 预加载机制
 
-## 快速开始
+## 📁 项目结构
+
+```
+src/
+├── components/     # React 组件（features/layout/ui 分类）
+├── services/       # 业务逻辑层（GitHub API、配置、翻译）
+├── hooks/          # 自定义 Hooks（状态管理、响应式检测）
+├── utils/          # 工具函数（日期、文件名解析、验证等）
+├── types/          # TypeScript 类型定义
+├── constants/      # 应用常量配置
+└── styles/         # 全局样式
+```
+
+## 🚀 核心功能
+
+- **GitHub API 集成** - 30分钟智能缓存、文章预加载、403错误降级处理
+- **智能文章处理** - 支持多种日期格式解析（2025.9.9、2025-9-9、20250909等），按日期/序号/文件名智能排序
+- **配置管理** - 支持 GitHub URL 解析、配置验证、文件夹过滤
+- **响应式设计** - 移动端单页面切换，桌面端侧边栏布局
+- **大模型翻译** - 集成 SiliconFlow API，支持流式翻译文章内容
+
+## 📦 安装和运行
+
+### 一键 Vercel 部署
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/dubuqingfeng/yarb-web3)
+
+### 环境要求
+- Node.js >= 16.0.0
+- npm >= 8.0.0
 
 ### 安装依赖
-
 ```bash
 npm install
 ```
 
 ### 启动开发服务器
-
 ```bash
 npm run dev
 ```
 
-访问 `http://localhost:3000` 查看应用。
+访问 `http://localhost:3000` 查看应用（开发服务器会自动打开浏览器）。
 
-### 构建生产版本
-
-```bash
-npm run build
-```
-
-### 预览生产版本
-
-```bash
-npm run preview
-```
-
-## 项目结构
-
-```
-src/
-├── components/           # React 组件
-│   ├── YearNavigation.tsx    # 年份导航组件 (支持骨架屏)
-│   ├── ArticleList.tsx       # 文章列表组件 (支持移动端)
-│   ├── ArticleContent.tsx    # 文章内容展示组件 (支持移动端)
-│   └── BackToTop.tsx         # 回到顶部组件 (支持自定义容器)
-├── services/            # 服务层
-│   └── githubApi.ts         # GitHub API 服务 (缓存+预加载)
-├── hooks/               # 自定义 Hooks
-│   ├── useAppState.ts       # 应用状态管理 (完整状态机)
-│   ├── useMobileDetection.ts # 移动端检测
-│   └── useVirtualScroll.ts   # 虚拟滚动 (性能优化)
-├── App.tsx              # 主应用组件 (响应式布局)
-├── main.tsx             # 应用入口
-└── *.css                # 样式文件 (响应式+动画)
-```
-
-## 核心功能
-
-### 1. GitHub API 集成
-
-- **智能缓存**: 30分钟本地缓存，减少 API 请求频率
-- **错误处理**: 403错误降级处理，提供默认数据
-- **预加载机制**: 自动预加载相邻文章，提升用户体验
-- **请求拦截**: Axios 拦截器处理错误和超时
-- **日期解析**: 支持多种日期格式的文件名解析
-
-### 2. 组件设计
-
-- **YearNavigation**: 年份导航栏，支持骨架屏加载和刷新按钮
-- **ArticleList**: 文章列表，支持移动端单页面模式和日期排序
-- **ArticleContent**: 文章内容展示，支持移动端返回按钮和日期显示
-- **BackToTop**: 智能回到顶部按钮，支持自定义滚动容器
-
-### 3. 状态管理
-
-使用完整的自定义 Hook 体系：
-- **useAppState**: 完整的状态机，管理所有应用状态
-- **useMobileDetection**: 移动端检测，动态切换布局
-- **useVirtualScroll**: 虚拟滚动，优化长列表性能
-
-### 4. 响应式设计
-
-- **桌面端**: 侧边栏 + 主内容区域布局
-- **移动端**: 单页面切换模式，列表和内容分别显示
-- **自适应**: 1000px 断点自动切换布局模式
-
-### 5. 性能优化
-
-- **智能缓存**: 多级缓存策略，减少重复请求
-- **预加载**: 相邻文章自动预加载
-- **骨架屏**: 优雅的加载状态展示
-- **错误重试**: 智能错误处理和重试机制
-
-## 配置说明
-
-### GitHub API 配置
-
-在 `src/services/githubApi.ts` 中可以修改以下配置：
-
-```typescript
-const REPO_OWNER = 'dubuqingfeng';  // 仓库所有者
-const REPO_NAME = 'yarb-web3';      // 仓库名称
-const ARCHIVE_PATH = 'archive';     // 文章目录路径
-const CACHE_DURATION = 30 * 60 * 1000; // 缓存时长 (30分钟)
-```
-
-### 移动端断点配置
-
-在 `src/hooks/useMobileDetection.ts` 中修改断点：
-
-```typescript
-setIsMobile(window.innerWidth < 1000); // 1000px 断点
-```
-
-### 样式定制
-
-所有样式文件都支持自定义修改：
-- `src/App.css` - 全局样式和响应式布局
-- `src/components/*.css` - 组件样式和动画效果
-- 支持 CSS 变量自定义主题色彩
-
-## 部署
-
-### Vercel 部署
-
-1. 将代码推送到 GitHub 仓库
-2. 在 Vercel 中导入项目
-3. 自动部署完成
-
-### 其他平台
-
-项目使用标准的 Vite 构建，可以部署到任何支持静态网站的平台上。
+## ⚙️ 配置说明
 
 
+### 自定义配置
+1. 点击设置按钮打开配置界面
+2. 输入 GitHub 仓库 URL（支持完整 URL 或简写）
+3. 点击"测试连接"验证配置
+4. 选择要展示的文件夹（可选）
+5. 保存配置并自动刷新
 
-## 开发说明
+### 高级配置
+可在 `src/constants/index.ts` 中修改：
+- 响应式断点（移动端 < 1000px）
+- 缓存时长（默认 30 分钟）
+- 预加载数量（默认前后各 2 篇）
 
-### 添加新功能
+## 🚀 部署
 
-1. 在 `src/components/` 中创建新组件
-2. 在 `src/services/` 中添加相关服务
-3. 在 `src/hooks/` 中管理状态逻辑
-4. 更新 `src/App.tsx` 集成新功能
+支持所有静态网站部署平台（Vercel、Netlify、GitHub Pages 等）：
 
-
-### 错误处理
-
-- 网络错误自动重试机制
-- 403 错误降级处理
-- 用户友好的错误提示
-- 完整的错误边界处理
+1. 推送代码到 GitHub 仓库
+2. 在部署平台中导入项目
+3. 自动构建和部署

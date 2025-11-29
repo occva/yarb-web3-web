@@ -1,13 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { YearNavigationProps } from '../../types';
 import './YearNavigation.css';
-
-interface YearNavigationProps {
-  years: string[];
-  currentYear: string;
-  onYearChange: (year: string) => void;
-  loading?: boolean;
-  onRefresh?: () => void;
-}
 
 const YearNavigation: React.FC<YearNavigationProps> = ({
   years,
@@ -56,6 +49,8 @@ const YearNavigation: React.FC<YearNavigationProps> = ({
                   className={`year-button ${currentYear === year ? 'active' : ''}`}
                   onClick={() => onYearChange(year)}
                   disabled={loading}
+                  aria-label={`选择 ${year} 年`}
+                  aria-pressed={currentYear === year}
                 >
                   {year}
                 </button>
@@ -68,6 +63,7 @@ const YearNavigation: React.FC<YearNavigationProps> = ({
               onClick={onRefresh}
               disabled={loading}
               title="刷新数据"
+              aria-label="刷新数据"
             >
               🔄
             </button>
@@ -79,3 +75,4 @@ const YearNavigation: React.FC<YearNavigationProps> = ({
 };
 
 export default YearNavigation;
+

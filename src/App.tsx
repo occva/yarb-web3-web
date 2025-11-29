@@ -1,14 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import YearNavigation from './components/YearNavigation';
-import ArticleList from './components/ArticleList';
-import ArticleContent from './components/ArticleContent';
-import Settings from './components/Settings';
-import SettingsButton from './components/SettingsButton';
+import YearNavigation from './components/layout/YearNavigation';
+import ArticleList from './components/features/ArticleList';
+import ArticleContent from './components/features/ArticleContent';
+import Settings from './components/features/Settings';
+import SettingsButton from './components/ui/SettingsButton';
+import BackToTop from './components/ui/BackToTop';
 import { useAppState } from './hooks/useAppState';
 import { useMobileDetection } from './hooks/useMobileDetection';
-import { Article } from './services/githubApi';
-import './App.css';
-import BackToTop from './components/BackToTop';
+import { Article } from './types';
+import { formatArticleTitle } from './utils';
+import './styles/global-styles.css';
 
 const App: React.FC = () => {
   const { state, actions } = useAppState();
@@ -16,13 +17,10 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
 
   // 格式化文章标题用于显示
-  const formatArticleTitle = useMemo(() => (article: any): string => {
-    if (!article) return '文章内容';
-    return article.name
-      .replace(/\.md$/, '')
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, (l: string) => l.toUpperCase());
-  }, []);
+  const articleTitle = useMemo(() => {
+    if (!state.currentArticle) return '文章内容';
+    return formatArticleTitle(state.currentArticle.name);
+  }, [state.currentArticle]);
 
   return (
     <div className="app">
@@ -40,11 +38,11 @@ const App: React.FC = () => {
           state.currentArticle ? (
             <ArticleContent
               content={state.articleContent}
-              title={formatArticleTitle(state.currentArticle)}
+              title={articleTitle}
               loading={state.loading.content}
               error={state.error.content}
               isMobile={true}
-              onBack={() => actions.selectArticle(null)} // 返回列表
+              onBack={() => actions.selectArticle(null)}
               articleDate={state.currentArticle?.date}
             />
           ) : (
@@ -74,7 +72,7 @@ const App: React.FC = () => {
             <section className="content-area">
               <ArticleContent
                 content={state.articleContent}
-                title={formatArticleTitle(state.currentArticle)}
+                title={articleTitle}
                 loading={state.loading.content}
                 error={state.error.content}
                 isMobile={false}
@@ -100,13 +98,20 @@ const App: React.FC = () => {
                   actions.retry('articles');
                 }
               }}
+              aria-label="重试加载"
             >
               重试
             </button>
           </div>
         </div>
       )}
-      {!isMobile && <BackToTop targetSelector=".content-body" alwaysVisible />}
+      {!isMobile && (
+        <BackToTop 
+          targetSelector=".content-body" 
+          alwaysVisible 
+          aria-label="回到顶部"
+        />
+      )}
       
       {/* 设置按钮 */}
       <SettingsButton onClick={() => setShowSettings(true)} />

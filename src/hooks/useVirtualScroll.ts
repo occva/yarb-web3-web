@@ -1,18 +1,5 @@
 import { useState, useMemo } from 'react';
-
-interface VirtualScrollOptions {
-  itemHeight: number;
-  containerHeight: number;
-  overscan?: number; // 额外渲染的项目数量
-}
-
-interface VirtualScrollResult {
-  startIndex: number;
-  endIndex: number;
-  totalHeight: number;
-  offsetY: number;
-  handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
-}
+import { VirtualScrollOptions, VirtualScrollResult } from '../types';
 
 export const useVirtualScroll = (
   itemCount: number,
