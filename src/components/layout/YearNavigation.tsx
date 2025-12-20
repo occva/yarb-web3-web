@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { YearNavigationProps } from '../../types';
 import './YearNavigation.css';
 
@@ -65,7 +66,7 @@ const YearNavigation: React.FC<YearNavigationProps> = ({
               title="刷新数据"
               aria-label="刷新数据"
             >
-              🔄
+              <RefreshCw size={16} className={loading ? 'spin-icon' : ''} />
             </button>
           )}
         </div>

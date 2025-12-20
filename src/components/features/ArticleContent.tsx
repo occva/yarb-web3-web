@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Globe, RotateCcw, Copy, AlertTriangle, BookOpen, ChevronLeft, Loader2 } from 'lucide-react';
 import { ArticleContentProps } from '../../types';
 import { formatDate, fixMarkdownLinks } from '../../utils';
 import { translateContentStream } from '../../services/translationService';
@@ -54,11 +55,6 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
       setToastMessage('复制失败，请稍后重试');
     }
   }, [content, translatedContent, isShowingTranslation]);
-
-  // 处理打印
-  const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
 
   // 处理翻译
   const handleTranslate = useCallback(async () => {
@@ -237,7 +233,9 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
           <h2>文章内容</h2>
         </div>
         <div className="error-state">
-          <div className="error-icon">⚠️</div>
+          <div className="error-icon">
+            <AlertTriangle size={48} />
+          </div>
           <h3>加载失败</h3>
           <p>{error}</p>
         </div>
@@ -252,7 +250,9 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
           <h2>文章内容</h2>
         </div>
         <div className="empty-content">
-          <div className="empty-icon">📖</div>
+          <div className="empty-icon">
+            <BookOpen size={48} />
+          </div>
           <p>请选择一篇文章查看内容</p>
         </div>
       </div>
@@ -269,7 +269,7 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
             title="返回文章列表"
             aria-label="返回文章列表"
           >
-            ← 返回
+            <ChevronLeft size={16} className="back-icon" /> 返回
           </button>
         )}
         {isMobile ? (
@@ -303,15 +303,13 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
             }
             disabled={isTranslating}
           >
-            {isTranslating ? '⏳' : translatedContent ? (isShowingTranslation ? '🔙' : '🌐') : '🌐'}
-          </button>
-          <button 
-            className="action-button"
-            onClick={handlePrint}
-            title="打印文章"
-            aria-label="打印文章"
-          >
-            🖨️
+            {isTranslating ? (
+              <Loader2 size={18} className="spin-icon" />
+            ) : translatedContent ? (
+              isShowingTranslation ? <RotateCcw size={18} /> : <Globe size={18} />
+            ) : (
+              <Globe size={18} />
+            )}
           </button>
           <button 
             className="action-button"
@@ -319,14 +317,16 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
             title="复制内容"
             aria-label="复制内容"
           >
-            📋
+            <Copy size={18} />
           </button>
         </div>
       </div>
       <div className="content-body">
         {translationError && !isTranslating && (
           <div className="translation-error">
-            <div className="error-icon">⚠️</div>
+            <div className="error-icon">
+              <AlertTriangle size={24} />
+            </div>
             <h3>翻译失败</h3>
             <p>{translationError}</p>
           </div>

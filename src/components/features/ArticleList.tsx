@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
+import { Book, FileText, Calendar, Loader2 } from 'lucide-react';
 import { ArticleListProps } from '../../types';
 import { formatArticleTitle, formatDate } from '../../utils';
 import './ArticleList.css';
@@ -57,6 +58,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
             </h3>
             {article.date && (
               <p className="article-date">
+                <Calendar size={14} style={{ marginRight: '4px', verticalAlign: 'text-bottom' }} />
                 {formatDate(article.date)}
               </p>
             )}
@@ -72,7 +74,10 @@ const ArticleList: React.FC<ArticleListProps> = ({
       <div className="article-list">
         <div className="list-header">
           <h2>{year} 年文章</h2>
-          <div className="loading-indicator">加载中...</div>
+          <div className="loading-indicator">
+            <Loader2 size={16} className="spin-icon" />
+            <span>加载中...</span>
+          </div>
         </div>
         <div className="article-skeleton-list">
           {[1, 2, 3, 4, 5].map(i => (
@@ -93,7 +98,9 @@ const ArticleList: React.FC<ArticleListProps> = ({
           <h2>{year} 年文章</h2>
         </div>
         <div className="empty-state">
-          <div className="empty-icon">📄</div>
+          <div className="empty-icon">
+            <FileText size={48} />
+          </div>
           <p>该年份暂无文章</p>
         </div>
       </div>
@@ -103,7 +110,9 @@ const ArticleList: React.FC<ArticleListProps> = ({
   return (
     <div className={`article-list ${isMobile ? 'mobile' : ''}`}>
       <div className="list-header">
-        <div className="header-icon">📚</div>
+        <div className="header-icon">
+          <Book size={24} />
+        </div>
         <h2>YARB Web3</h2>
       </div>
       <div className="article-items">

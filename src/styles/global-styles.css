@@ -528,27 +528,13 @@ select:focus {
   animation: fadeIn 0.3s ease-out;
 }
 
-/* 打印样式 */
-@media print {
-  .app {
-    background: white;
-  }
-  
-  .main-content {
-    padding: 0;
-  }
-  
-  .content-grid {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  
-  .sidebar {
-    display: none;
-  }
-  
-  .error-banner {
-    display: none;
-  }
+/* 旋转动画 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { X, Check, XCircle } from 'lucide-react';
 import { SettingsProps, GitHubRepoConfig, GitHubFile } from '../../types';
 import { configService } from '../../services/configService';
 import { githubApi } from '../../services/githubApi';
@@ -153,7 +154,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) 
             onClick={onClose}
             aria-label="关闭设置"
           >
-            ×
+            <X size={24} />
           </button>
         </div>
         
@@ -248,10 +249,14 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onConfigChange }) 
             </button>
             
             {testResult === 'success' && (
-              <span className="test-result success">✓ 连接成功</span>
+              <span className="test-result success">
+                <Check size={16} /> 连接成功
+              </span>
             )}
             {testResult === 'error' && (
-              <span className="test-result error">✗ 连接失败</span>
+              <span className="test-result error">
+                <XCircle size={16} /> 连接失败
+              </span>
             )}
           </div>
 

@@ -1,24 +1,23 @@
 .back-to-top {
   position: fixed;
-  right: 20px;
-  bottom: 80px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  right: 24px;
+  bottom: 84px; /* Positioned above settings button (24 + 48 + 12 gap) */
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   border: none;
-  background: rgba(0, 0, 0, 0.7);
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
   color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: scale(0.9) translateY(10px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: scale(0.9) translateY(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
   pointer-events: none;
   z-index: 99;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
 }
 
 .back-to-top.show {
@@ -27,23 +26,34 @@
   transform: scale(1) translateY(0);
 }
 
+.back-to-top:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+  transform: translateY(-4px);
+}
+
+.back-to-top:active {
+  transform: translateY(-2px) scale(0.95);
+}
+
 .back-to-top-icon {
   width: 24px;
   height: 24px;
-  transition: transform 0.2s ease;
+  transition: transform 0.3s ease;
 }
 
 .back-to-top:hover .back-to-top-icon {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 /* 移动端适配 */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .back-to-top {
-    bottom: 72px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
+    bottom: 74px; /* 20 + 44 + 10 gap */
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
   }
   
   .back-to-top-icon {

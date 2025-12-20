@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
 import './Toast.css';
 
 export interface ToastProps {
@@ -31,7 +32,9 @@ const Toast: React.FC<ToastProps> = ({ message, duration = 3000, onClose }) => {
   return (
     <div className={`toast ${visible ? 'show' : ''}`}>
       <div className="toast-content">
-        <span className="toast-icon">✓</span>
+        <span className="toast-icon">
+          <Check size={20} />
+        </span>
         <span className="toast-message">{message}</span>
       </div>
     </div>

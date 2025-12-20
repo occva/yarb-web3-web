@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { ArrowUp } from 'lucide-react';
 import { BackToTopProps } from '../../types';
 import './BackToTop.css';
 
@@ -78,20 +79,7 @@ const BackToTop: React.FC<BackToTopProps> = ({ threshold = 200, targetSelector, 
       onClick={scrollToTop}
       aria-label="回到顶部"
     >
-      <svg 
-        className="back-to-top-icon" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path 
-          d="M18 15L12 9L6 15" 
-          stroke="currentColor" 
-          strokeWidth="2.5" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-        />
-      </svg>
+      <ArrowUp size={24} className="back-to-top-icon" />
     </button>
   );
 };
