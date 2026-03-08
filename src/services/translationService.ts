@@ -8,6 +8,12 @@ interface StreamTranslationOptions {
   signal?: AbortSignal;
 }
 
+interface TranslationResponsePayload {
+  text?: string;
+  error?: string;
+  done?: boolean;
+}
+
 /**
  * 流式翻译文章内容
  * @param content 要翻译的内容
@@ -24,6 +30,34 @@ export const translateContentStream = async (
     if (notified) return;
     notified = true;
     options.onError?.(error);
+  };
+
+  const parseStreamEvent = (rawEvent: string): { event: string; payload: TranslationResponsePayload | null } => {
+    let eventName = 'message';
+    const dataLines: string[] = [];
+
+    for (const line of rawEvent.split('\n')) {
+      const trimmed = line.trimEnd();
+      if (!trimmed) continue;
+      if (trimmed.startsWith('event:')) {
+        eventName = trimmed.slice(6).trim() || 'message';
+      } else if (trimmed.startsWith('data:')) {
+        dataLines.push(trimmed.slice(5).trim());
+      }
+    }
+
+    if (dataLines.length === 0) {
+      return { event: eventName, payload: null };
+    }
+
+    try {
+      return {
+        event: eventName,
+        payload: JSON.parse(dataLines.join('\n')) as TranslationResponsePayload,
+      };
+    } catch {
+      return { event: eventName, payload: null };
+    }
   };
 
   try {
@@ -48,22 +82,85 @@ export const translateContentStream = async (
       }),
     });
 
-    const result = await response.json().catch(() => ({} as { error?: string; text?: string }));
     if (!response.ok) {
+      const result = await response.json().catch(() => ({} as TranslationResponsePayload));
       throw new Error(result.error || '翻译服务调用失败');
     }
 
-    const text = typeof result.text === 'string' ? result.text.trim() : '';
-    if (!text) {
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const result = await response.json().catch(() => ({} as TranslationResponsePayload));
+      const text = typeof result.text === 'string' ? result.text.trim() : '';
+      if (!text) {
+        throw new Error('翻译结果为空');
+      }
+      options.onChunk(text);
+      if (!options.signal?.aborted) {
+        options.onComplete?.();
+      }
+      return;
+    }
+
+    if (!response.body) {
+      throw new Error('翻译流不可用');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let receivedChunk = false;
+    let doneReceived = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      let eventBoundary = buffer.indexOf('\n\n');
+      while (eventBoundary !== -1) {
+        const rawEvent = buffer.slice(0, eventBoundary).trim();
+        buffer = buffer.slice(eventBoundary + 2);
+        eventBoundary = buffer.indexOf('\n\n');
+
+        if (!rawEvent) continue;
+
+        const { event, payload } = parseStreamEvent(rawEvent);
+        if (!payload) continue;
+
+        if (event === 'error') {
+          throw new Error(payload.error || '翻译服务调用失败');
+        }
+
+        if (event === 'chunk' && typeof payload.text === 'string' && payload.text) {
+          receivedChunk = true;
+          options.onChunk(payload.text);
+        }
+
+        if (event === 'done' || payload.done) {
+          doneReceived = true;
+          break;
+        }
+      }
+
+      if (doneReceived) {
+        break;
+      }
+    }
+
+    if (!receivedChunk) {
       throw new Error('翻译结果为空');
     }
-    options.onChunk(text);
 
     if (!options.signal?.aborted) {
       options.onComplete?.();
     }
   } catch (error) {
-    const normalizedError = error instanceof Error ? error : new Error('流式翻译失败');
+    const isAborted = options.signal?.aborted || (error instanceof DOMException && error.name === 'AbortError');
+    const normalizedError = isAborted
+      ? new Error('翻译已取消')
+      : (error instanceof Error ? error : new Error('流式翻译失败'));
     emitError(normalizedError);
     throw normalizedError;
   }

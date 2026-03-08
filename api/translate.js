@@ -25,6 +25,14 @@ const getErrorMessage = (status, message) => {
   return message || '翻译服务调用失败';
 };
 
+const extractTextFromPayload = (payload) => {
+  const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
+  return candidates
+    .flatMap((candidate) => (Array.isArray(candidate?.content?.parts) ? candidate.content.parts : []))
+    .map((part) => (typeof part?.text === 'string' ? part.text : ''))
+    .join('');
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -55,7 +63,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}/${encodeURIComponent(model)}:generateContent`, {
+    const response = await fetch(`${GEMINI_API_URL}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,27 +82,105 @@ export default async function handler(req, res) {
       }),
     });
 
-    const result = await response.json();
     if (!response.ok) {
-      const message = result?.error?.message || '';
+      const errorText = await response.text();
+      let message = '';
+      try {
+        const parsedError = JSON.parse(errorText);
+        message = parsedError?.error?.message || '';
+      } catch {
+        message = errorText;
+      }
       return res.status(response.status).json({
         error: getErrorMessage(response.status, message),
       });
     }
 
-    const text = (result?.candidates || [])
-      .flatMap((candidate) => candidate?.content?.parts || [])
-      .map((part) => part?.text || '')
-      .join('')
-      .trim();
-
-    if (!text) {
-      return res.status(502).json({ error: '翻译服务未返回有效内容' });
+    if (!response.body) {
+      return res.status(502).json({ error: '翻译服务未返回流式内容' });
     }
 
-    return res.status(200).json({ text });
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    if (typeof res.flushHeaders === 'function') {
+      res.flushHeaders();
+    }
+
+    const sendEvent = (eventName, data) => {
+      res.write(`event: ${eventName}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let clientDisconnected = false;
+
+    req.on('close', () => {
+      clientDisconnected = true;
+      reader.cancel().catch(() => undefined);
+    });
+
+    while (!clientDisconnected) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      let eventBoundary = buffer.indexOf('\n\n');
+
+      while (eventBoundary !== -1) {
+        const rawEvent = buffer.slice(0, eventBoundary);
+        buffer = buffer.slice(eventBoundary + 2);
+        eventBoundary = buffer.indexOf('\n\n');
+
+        const payloadLines = rawEvent
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith('data:'));
+
+        for (const line of payloadLines) {
+          const payloadText = line.slice(5).trim();
+          if (!payloadText || payloadText === '[DONE]') {
+            continue;
+          }
+
+          try {
+            const payload = JSON.parse(payloadText);
+            const textChunk = extractTextFromPayload(payload);
+            if (textChunk) {
+              sendEvent('chunk', { text: textChunk });
+            }
+
+            if (payload?.candidates?.some((candidate) => candidate?.finishReason === 'STOP')) {
+              sendEvent('done', { done: true });
+              res.end();
+              return;
+            }
+          } catch {
+            // 忽略无法解析的事件片段，继续处理后续流数据
+          }
+        }
+      }
+    }
+
+    if (!res.writableEnded) {
+      sendEvent('done', { done: true });
+      res.end();
+    }
+    return undefined;
   } catch (error) {
     const message = error instanceof Error ? error.message : '翻译服务调用失败';
-    return res.status(500).json({ error: message });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: message });
+    }
+    if (!res.writableEnded) {
+      res.write(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`);
+      res.end();
+    }
+    return undefined;
   }
 }
