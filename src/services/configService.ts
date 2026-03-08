@@ -1,7 +1,6 @@
 // 配置管理服务
-import { GitHubRepoConfig, AppConfig } from '../types';
+import { AppConfig, GitHubRepoConfig } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONFIG, ERROR_MESSAGES } from '../constants';
-import { validateConfig } from '../utils';
 
 const createDefaultConfig = (): AppConfig => ({
   githubRepo: {
@@ -59,19 +58,9 @@ class ConfigService {
     this.saveConfig(newConfig);
   }
 
-  // 更新选中的文件夹
-  updateSelectedFolders(folders: string[]): void {
-    this.updateGitHubRepo({ selectedFolders: folders });
-  }
-
   // 重置为默认配置
   resetToDefault(): void {
     localStorage.removeItem(STORAGE_KEYS.CONFIG);
-  }
-
-  // 验证配置是否有效
-  validateConfig(config: Partial<GitHubRepoConfig>): string[] {
-    return validateConfig(config);
   }
 }
 

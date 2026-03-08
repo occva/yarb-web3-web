@@ -145,7 +145,7 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
   // 使用useMemo缓存markdown组件配置
   const markdownComponents = useMemo(() => ({
     // 自定义代码块样式
-    code: ({ node, inline, className, children, ...props }: any) => {
+    code: ({ inline, className, children, ...props }: any) => {
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
         <pre className="code-block">

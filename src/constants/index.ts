@@ -25,8 +25,6 @@ export const DEFAULT_CONFIG = {
 // 响应式断点
 export const BREAKPOINTS = {
   MOBILE: 1000,
-  TABLET: 1200,
-  DESKTOP: 1400,
 } as const;
 
 // 预加载配置
@@ -92,7 +90,5 @@ export const ERROR_MESSAGES = {
   YEAR_FOLDERS_FAILED: '无法获取年份文件夹列表',
   ARTICLES_FAILED: (year: string) => `无法获取 ${year} 年的文章列表`,
   ARTICLE_CONTENT_FAILED: '无法获取文章内容',
-  CONNECTION_TEST_FAILED: '无法连接到指定的GitHub仓库，请检查配置',
-  FOLDERS_LOAD_FAILED: '获取文件夹列表失败',
 } as const;
 

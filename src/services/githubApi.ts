@@ -363,12 +363,6 @@ class GitHubApiService {
     this.cache.clear();
     this.cacheTimestamps.clear();
   }
-
-  // 清除缓存
-  clearCache(): void {
-    this.cache.clear();
-    this.cacheTimestamps.clear();
-  }
 }
 
 export const githubApi = new GitHubApiService();

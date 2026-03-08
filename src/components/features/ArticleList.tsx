@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { Book, FileText, Calendar, Loader2 } from 'lucide-react';
-import { ArticleListProps } from '../../types';
+import { ArticleListProps, Article } from '../../types';
 import { formatArticleTitle, formatDate } from '../../utils';
 import './ArticleList.css';
 
@@ -13,7 +13,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
   isMobile = false
 }) => {
   // 处理文章点击
-  const handleArticleClick = useCallback((article: any) => {
+  const handleArticleClick = useCallback((article: Article) => {
     onArticleSelect(article);
   }, [onArticleSelect]);
 

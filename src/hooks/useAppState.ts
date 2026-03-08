@@ -104,25 +104,7 @@ export const useAppState = () => {
     try {
       const years = await githubApi.getYearFolders();
       const currentYear = githubApi.getCurrentYear();
-      
-      // 优先选择当前年份，如果不存在则选择最新年份
-      const getLatestYear = (yearList: string[]): string => {
-        if (yearList.length === 0) return currentYear;
-        
-        // 尝试解析为数字并找到最大值
-        const numericYears = yearList
-          .map(year => parseInt(year))
-          .filter(year => !isNaN(year));
-        
-        if (numericYears.length > 0) {
-          return Math.max(...numericYears).toString();
-        }
-        
-        // 如果无法解析为数字，按字符串排序取最后一个
-        return [...yearList].sort().pop() || currentYear;
-      };
-      
-      const latestYear = getLatestYear(years);
+      const latestYear = githubApi.getLatestYear(years);
       const defaultYear = years.includes(currentYear) ? currentYear : latestYear;
       
       setState(prev => ({
