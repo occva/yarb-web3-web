@@ -1,8 +1,5 @@
-// 翻译服务（Gemini）
-import { GoogleGenAI } from '@google/genai';
-import { apiKeyService } from './apiKeyService';
-
-const TRANSLATION_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.1-flash-lite-preview';
+// 翻译服务（通过服务端 API 代理 Gemini）
+const TRANSLATION_API_PATH = '/api/translate';
 
 interface StreamTranslationOptions {
   onChunk: (chunk: string) => void;
@@ -10,11 +7,6 @@ interface StreamTranslationOptions {
   onError?: (error: Error) => void;
   signal?: AbortSignal;
 }
-
-const createClient = (): GoogleGenAI => {
-  const apiKey = apiKeyService.getApiKey();
-  return new GoogleGenAI({ apiKey });
-};
 
 /**
  * 流式翻译文章内容
@@ -44,35 +36,28 @@ export const translateContentStream = async (
     }
 
     const targetLang = targetLanguage === '中文' ? '中文' : targetLanguage;
-    const prompt = `你是一个专业的翻译助手。请将以下内容完整翻译成${targetLang}。
-
-重要要求：
-1. 如果原文是英文或其他非${targetLang}语言，必须完整翻译成${targetLang}
-2. 如果原文已经是${targetLang}，保持原文不变
-3. 严格保持原文的 Markdown 格式结构（标题、列表、代码块、链接等）
-4. 代码块中的代码保持原样不翻译
-5. URL 链接地址（如 https://example.com）保持不变，但链接显示文字必须翻译
-6. 只返回翻译后的内容，不要添加任何额外说明
-
-需要翻译的内容：
-
-${content}`;
-
-    const ai = createClient();
-    const stream = await ai.models.generateContentStream({
-      model: TRANSLATION_MODEL,
-      contents: prompt,
+    const response = await fetch(TRANSLATION_API_PATH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: options.signal,
+      body: JSON.stringify({
+        content,
+        targetLanguage: targetLang,
+      }),
     });
 
-    for await (const chunk of stream) {
-      if (options.signal?.aborted) {
-        throw new Error('翻译已取消');
-      }
-      const text = chunk.text;
-      if (text) {
-        options.onChunk(text);
-      }
+    const result = await response.json().catch(() => ({} as { error?: string; text?: string }));
+    if (!response.ok) {
+      throw new Error(result.error || '翻译服务调用失败');
     }
+
+    const text = typeof result.text === 'string' ? result.text.trim() : '';
+    if (!text) {
+      throw new Error('翻译结果为空');
+    }
+    options.onChunk(text);
 
     if (!options.signal?.aborted) {
       options.onComplete?.();
