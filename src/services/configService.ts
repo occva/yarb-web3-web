@@ -3,6 +3,13 @@ import { GitHubRepoConfig, AppConfig } from '../types';
 import { STORAGE_KEYS, DEFAULT_CONFIG, ERROR_MESSAGES } from '../constants';
 import { validateConfig } from '../utils';
 
+const createDefaultConfig = (): AppConfig => ({
+  githubRepo: {
+    ...DEFAULT_CONFIG.githubRepo,
+    selectedFolders: [...DEFAULT_CONFIG.githubRepo.selectedFolders],
+  },
+});
+
 class ConfigService {
 
   // 获取配置
@@ -11,12 +18,13 @@ class ConfigService {
       const stored = localStorage.getItem(STORAGE_KEYS.CONFIG);
       if (stored) {
         const config = JSON.parse(stored);
+        const defaultConfig = createDefaultConfig();
         // 合并默认配置，确保所有字段都存在
         return {
-          ...DEFAULT_CONFIG,
+          ...defaultConfig,
           ...config,
           githubRepo: {
-            ...DEFAULT_CONFIG.githubRepo,
+            ...defaultConfig.githubRepo,
             ...config.githubRepo
           }
         };
@@ -25,7 +33,7 @@ class ConfigService {
       console.error('读取配置失败:', error);
     }
     
-    return DEFAULT_CONFIG;
+    return createDefaultConfig();
   }
 
   // 保存配置

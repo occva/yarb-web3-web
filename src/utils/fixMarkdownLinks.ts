@@ -17,7 +17,6 @@ export const fixMarkdownLinks = (content: string): string => {
   // 使用正则匹配：查找 [文本](URL 但后面没有 ) 的情况
   
   // 从后往前查找并修复，避免索引偏移
-  let lastIndex = fixedContent.length;
   const patterns: Array<{ start: number; end: number; text: string; url: string }> = [];
   
   // 查找所有可能的链接模式
