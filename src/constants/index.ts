@@ -29,11 +29,6 @@ export const BREAKPOINTS = {
   DESKTOP: 1400,
 } as const;
 
-// 虚拟滚动配置
-export const VIRTUAL_SCROLL_DEFAULTS = {
-  OVERSCAN: 5,
-} as const;
-
 // 预加载配置
 export const PRELOAD_CONFIG = {
   ARTICLE_COUNT: 2,

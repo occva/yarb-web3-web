@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
 import './Toast.css';
 
-export interface ToastProps {
+interface ToastProps {
   message: string;
   duration?: number;
   onClose?: () => void;

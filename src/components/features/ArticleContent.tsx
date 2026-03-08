@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Globe, RotateCcw, Copy, AlertTriangle, BookOpen, ChevronLeft, Loader2 } from 'lucide-react';
 import { ArticleContentProps } from '../../types';
-import { formatDate, fixMarkdownLinks } from '../../utils';
+import { formatDate } from '../../utils';
 import { translateContentStream } from '../../services/translationService';
 import Toast from '../ui/Toast';
 import './ArticleContent.css';
@@ -118,24 +118,6 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
             setIsTranslating(false);
             setTranslationError(null);
             abortControllerRef.current = null;
-          },
-          onError: (error: Error) => {
-            // 如果是取消操作，不显示错误
-            if (error.message === '翻译已取消' || abortController.signal.aborted) {
-              setIsTranslating(false);
-              setTranslatedContent(null);
-              setIsShowingTranslation(false);
-              setTranslationError(null);
-              abortControllerRef.current = null;
-              return;
-            }
-            const errorMessage = error.message || '翻译失败，请稍后重试';
-            setTranslationError(errorMessage);
-            setIsShowingTranslation(false);
-            setIsTranslating(false);
-            setTranslatedContent(null);
-            abortControllerRef.current = null;
-            setToastMessage(errorMessage);
           },
         },
         '中文'
@@ -339,7 +321,7 @@ const ArticleContent: React.FC<ArticleContentProps> = ({
               key={`${isShowingTranslation ? 'translated' : 'original'}-${content.substring(0, 50)}`}
             >
               {isShowingTranslation && translatedContent 
-                ? fixMarkdownLinks(translatedContent) 
+                ? translatedContent
                 : content}
             </ReactMarkdown>
             {isTranslating && (

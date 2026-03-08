@@ -86,7 +86,8 @@ class GitHubApiService {
       console.error('获取仓库结构失败:', error);
       if (error.response?.status === 404) {
         throw new Error(ERROR_MESSAGES.PATH_NOT_FOUND(fullPath));
-      } else if (error.response?.status === 403) {
+      }
+      if (error.response?.status === 403) {
         throw new Error(ERROR_MESSAGES.API_LIMITED);
       }
       throw new Error(ERROR_MESSAGES.REPO_STRUCTURE_FAILED);
@@ -120,15 +121,9 @@ class GitHubApiService {
       return yearFolders;
     } catch (error: any) {
       console.error('获取年份文件夹失败:', error);
-
-      // 如果是403错误，提供降级处理
-      if (error.response?.status === 403) {
-        console.warn('GitHub API访问受限，使用默认年份列表');
-        const defaultYears = ['2025', '2024', '2023', '2022'];
-        this.setCache(cacheKey, defaultYears);
-        return defaultYears;
+      if (error instanceof Error && error.message === ERROR_MESSAGES.API_LIMITED) {
+        throw error;
       }
-
       throw new Error(ERROR_MESSAGES.YEAR_FOLDERS_FAILED);
     }
   }
@@ -200,9 +195,9 @@ class GitHubApiService {
       if (error.response?.status === 404) {
         console.warn(`${year} 年文件夹不存在`);
         return [];
-      } else if (error.response?.status === 403) {
-        console.warn(`GitHub API访问受限，${year}年文章列表为空`);
-        return [];
+      }
+      if (error.response?.status === 403) {
+        throw new Error(ERROR_MESSAGES.API_LIMITED);
       }
 
       throw new Error(ERROR_MESSAGES.ARTICLES_FAILED(year));
@@ -230,10 +225,8 @@ class GitHubApiService {
     } catch (error: any) {
       console.error('获取文章内容失败:', error);
 
-      // 如果是403错误，提供降级处理
       if (error.response?.status === 403) {
-        console.warn('GitHub API访问受限，返回默认内容');
-        return '## 文章内容暂时无法加载\n\n由于GitHub API访问限制，文章内容暂时无法显示。请稍后再试。';
+        throw new Error(ERROR_MESSAGES.API_LIMITED);
       }
 
       throw new Error(ERROR_MESSAGES.ARTICLE_CONTENT_FAILED);
@@ -309,13 +302,20 @@ class GitHubApiService {
 
   // 根据当前日期查找文章
   findArticleByCurrentDate(articles: Article[]): Article | null {
+    const formatLocalDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD格式
+    const todayStr = formatLocalDate(today);
 
     // 查找今天的文章
     for (const article of articles) {
       if (article.date) {
-        const articleDateStr = article.date.toISOString().split('T')[0];
+        const articleDateStr = formatLocalDate(article.date);
         if (articleDateStr === todayStr) {
           return article;
         }

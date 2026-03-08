@@ -98,18 +98,3 @@ export interface BackToTopProps {
   alwaysVisible?: boolean;
 }
 
-// 虚拟滚动相关类型
-export interface VirtualScrollOptions {
-  itemHeight: number;
-  containerHeight: number;
-  overscan?: number;
-}
-
-export interface VirtualScrollResult {
-  startIndex: number;
-  endIndex: number;
-  totalHeight: number;
-  offsetY: number;
-  handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
-}
-

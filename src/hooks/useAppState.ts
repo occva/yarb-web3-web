@@ -163,20 +163,19 @@ export const useAppState = () => {
         articleContent: '',
       }));
     } else {
-      setState(prev => {
-        // 如果选择的是同一篇文章，不重新加载
-        if (prev.currentArticle?.path === article.path) {
-          return prev;
-        }
-        // 立即更新当前文章，然后异步加载文章内容
-        loadArticleContent(article, prev.articles);
-        return {
-          ...prev,
-          currentArticle: article,
-        };
-      });
+      // 如果选择的是同一篇文章，不重新加载
+      if (state.currentArticle?.path === article.path) {
+        return;
+      }
+
+      // 先更新状态，再异步加载内容
+      setState(prev => ({
+        ...prev,
+        currentArticle: article,
+      }));
+      loadArticleContent(article, state.articles);
     }
-  }, [loadArticleContent]);
+  }, [state.currentArticle, state.articles, loadArticleContent]);
 
   // 清除错误
   const clearError = useCallback((type: keyof AppState['error']) => {
@@ -194,25 +193,22 @@ export const useAppState = () => {
 
   // 重试加载
   const retry = useCallback((type: 'years' | 'articles' | 'content') => {
-    setState(prev => {
-      switch (type) {
-        case 'years':
-          loadYears();
-          break;
-        case 'articles':
-          if (prev.currentYear) {
-            loadArticles(prev.currentYear);
-          }
-          break;
-        case 'content':
-          if (prev.currentArticle) {
-            loadArticleContent(prev.currentArticle, prev.articles);
-          }
-          break;
-      }
-      return prev;
-    });
-  }, [loadYears, loadArticles, loadArticleContent]);
+    switch (type) {
+      case 'years':
+        loadYears();
+        break;
+      case 'articles':
+        if (state.currentYear) {
+          loadArticles(state.currentYear);
+        }
+        break;
+      case 'content':
+        if (state.currentArticle) {
+          loadArticleContent(state.currentArticle, state.articles);
+        }
+        break;
+    }
+  }, [loadYears, loadArticles, loadArticleContent, state.currentYear, state.currentArticle, state.articles]);
 
   // 初始化加载
   useEffect(() => {
