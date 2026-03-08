@@ -6,7 +6,7 @@
 
 - **🔗 动态 GitHub 仓库集成** - 支持任意 GitHub 仓库，自动解析目录结构
 - **📅 智能文章处理** - 从文件名解析日期和序号，支持多种日期格式
-- **🌐 大模型翻译功能** - 集成 SiliconFlow API，支持流式翻译文章内容
+- **🌐 大模型翻译功能** - 集成 Gemini API，支持流式翻译文章内容
 - **⚡ 高性能优化** - 30分钟智能缓存、文章预加载、虚拟滚动
 - **📱 完美响应式设计** - 移动端单页面切换，桌面端侧边栏布局
 - **⚙️ 灵活配置管理** - 支持自定义仓库地址、分支、路径和文件夹过滤
@@ -15,8 +15,8 @@
 
 ## 🛠 技术栈
 
-- **前端框架**: React 18 + TypeScript
-- **构建工具**: Vite 5.0
+- **前端框架**: React 19 + TypeScript
+- **构建工具**: Vite 7
 - **HTTP 客户端**: Axios (拦截器 + 错误处理)
 - **Markdown 渲染**: react-markdown + remark-gfm
 - **状态管理**: 自定义 Hooks (完整状态机)
@@ -42,7 +42,7 @@ src/
 - **智能文章处理** - 支持多种日期格式解析（2025.9.9、2025-9-9、20250909等），按日期/序号/文件名智能排序
 - **配置管理** - 支持 GitHub URL 解析、配置验证、文件夹过滤
 - **响应式设计** - 移动端单页面切换，桌面端侧边栏布局
-- **大模型翻译** - 集成 SiliconFlow API，支持流式翻译文章内容
+- **大模型翻译** - 集成 Gemini API，支持流式翻译文章内容
 
 ## 📦 安装和运行
 
@@ -51,23 +51,29 @@ src/
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/dubuqingfeng/yarb-web3)
 
 ### 环境要求
-- Node.js >= 16.0.0
-- npm >= 8.0.0
+- Node.js >= 22.12.0 < 25
+- pnpm >= 10.31.0
 
 ### 安装依赖
 ```bash
-npm install
+pnpm install
 ```
 
 ### 启动开发服务器
 ```bash
-npm run dev
+pnpm dev
 ```
 
 访问 `http://localhost:3000` 查看应用（开发服务器会自动打开浏览器）。
 
 ## ⚙️ 配置说明
 
+### 翻译 API Key（环境变量）
+1. 复制 `.env.example` 为 `.env`
+2. 配置 `VITE_GEMINI_API_KEY`
+3. 可选配置 `VITE_GEMINI_MODEL`
+
+> 注意：前端 `VITE_*` 变量会打包到客户端，仅适用于低敏场景。高敏密钥建议改为后端代理模式。
 
 ### 自定义配置
 1. 点击设置按钮打开配置界面
