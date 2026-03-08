@@ -14,6 +14,20 @@ interface TranslationResponsePayload {
   done?: boolean;
 }
 
+const popNextSseEvent = (buffer: string): { event: string | null; rest: string } => {
+  const match = /\r?\n\r?\n/.exec(buffer);
+  if (!match || match.index === undefined) {
+    return { event: null, rest: buffer };
+  }
+
+  const boundaryIndex = match.index;
+  const boundaryLength = match[0].length;
+  return {
+    event: buffer.slice(0, boundaryIndex),
+    rest: buffer.slice(boundaryIndex + boundaryLength),
+  };
+};
+
 /**
  * 流式翻译文章内容
  * @param content 要翻译的内容
@@ -118,11 +132,15 @@ export const translateContentStream = async (
       }
 
       buffer += decoder.decode(value, { stream: true });
-      let eventBoundary = buffer.indexOf('\n\n');
-      while (eventBoundary !== -1) {
-        const rawEvent = buffer.slice(0, eventBoundary).trim();
-        buffer = buffer.slice(eventBoundary + 2);
-        eventBoundary = buffer.indexOf('\n\n');
+      while (true) {
+        const { event: nextEvent, rest } = popNextSseEvent(buffer);
+        if (nextEvent === null) {
+          buffer = rest;
+          break;
+        }
+
+        const rawEvent = nextEvent.trim();
+        buffer = rest;
 
         if (!rawEvent) continue;
 

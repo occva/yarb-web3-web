@@ -33,6 +33,40 @@ const extractTextFromPayload = (payload) => {
     .join('');
 };
 
+const buildRequestBody = (content, targetLanguage) => ({
+  contents: [
+    {
+      parts: [
+        {
+          text: getPrompt(content, targetLanguage),
+        },
+      ],
+    },
+  ],
+});
+
+const formatRuntimeError = (error) => {
+  if (!(error instanceof Error)) return '翻译服务调用失败';
+  const causeMessage = error.cause && typeof error.cause === 'object' && 'message' in error.cause
+    ? String(error.cause.message || '')
+    : '';
+  return causeMessage ? `${error.message} (${causeMessage})` : error.message;
+};
+
+const popNextSseEvent = (buffer) => {
+  const match = /\r?\n\r?\n/.exec(buffer);
+  if (!match || match.index === undefined) {
+    return { event: null, rest: buffer };
+  }
+
+  const boundaryIndex = match.index;
+  const boundaryLength = match[0].length;
+  return {
+    event: buffer.slice(0, boundaryIndex),
+    rest: buffer.slice(boundaryIndex + boundaryLength),
+  };
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -63,24 +97,49 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
+    const requestOptions = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: getPrompt(content, targetLanguage),
-              },
-            ],
-          },
-        ],
-      }),
-    });
+      body: JSON.stringify(buildRequestBody(content, targetLanguage)),
+    };
+
+    let response;
+    try {
+      response = await fetch(
+        `${GEMINI_API_URL}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,
+        requestOptions
+      );
+    } catch {
+      const fallbackResponse = await fetch(
+        `${GEMINI_API_URL}/${encodeURIComponent(model)}:generateContent`,
+        requestOptions
+      );
+
+      if (!fallbackResponse.ok) {
+        const fallbackErrorText = await fallbackResponse.text();
+        let fallbackMessage = '';
+        try {
+          const parsedFallbackError = JSON.parse(fallbackErrorText);
+          fallbackMessage = parsedFallbackError?.error?.message || '';
+        } catch {
+          fallbackMessage = fallbackErrorText;
+        }
+        return res.status(fallbackResponse.status).json({
+          error: getErrorMessage(fallbackResponse.status, fallbackMessage),
+        });
+      }
+
+      const fallbackResult = await fallbackResponse.json();
+      const fallbackText = extractTextFromPayload(fallbackResult).trim();
+      if (!fallbackText) {
+        return res.status(502).json({ error: '翻译服务未返回有效内容' });
+      }
+
+      return res.status(200).json({ text: fallbackText });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -130,12 +189,14 @@ export default async function handler(req, res) {
       }
 
       buffer += decoder.decode(value, { stream: true });
-      let eventBoundary = buffer.indexOf('\n\n');
-
-      while (eventBoundary !== -1) {
-        const rawEvent = buffer.slice(0, eventBoundary);
-        buffer = buffer.slice(eventBoundary + 2);
-        eventBoundary = buffer.indexOf('\n\n');
+      while (true) {
+        const { event, rest } = popNextSseEvent(buffer);
+        if (event === null) {
+          buffer = rest;
+          break;
+        }
+        const rawEvent = event;
+        buffer = rest;
 
         const payloadLines = rawEvent
           .split('\n')
@@ -173,7 +234,7 @@ export default async function handler(req, res) {
     }
     return undefined;
   } catch (error) {
-    const message = error instanceof Error ? error.message : '翻译服务调用失败';
+    const message = formatRuntimeError(error);
     if (!res.headersSent) {
       return res.status(500).json({ error: message });
     }
